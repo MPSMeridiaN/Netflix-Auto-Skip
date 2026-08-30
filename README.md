@@ -115,7 +115,6 @@ Netflix Auto Skip/
 ├── README.md                  # Comprehensive documentation and setup guide
 ├── CHANGELOG.md             # Standard-compliant release and change history
 ├── CONTRIBUTING.md          # Guidelines for open-source contributors
-├── CHROMEWEBSTORE.md        # Chrome Web Store submission metadata & disclosures
 ├── package.json             # NPM scripts for building, testing, and packaging
 ├── assets/                  # Project visual assets & infographic
 │   └── infographic.png
