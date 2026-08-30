@@ -7,11 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.2] - 2026-08-30
+
+### Fixed
+- **Pre-Navigation Stats Persistence**: Reordered execution sequence so skip statistics are stored *before* button click dispatch, preventing data write aborts caused by Netflix's immediate URL navigation on next episode / skip.
+- **Dual Storage Synchronization**: Stats are now written concurrently to both `chrome.storage.local` and `chrome.storage.sync` with multi-area storage change listeners for 100% reliable counter updates.
+- **Clean Repository Metadata**: Removed redundant `CHROMEWEBSTORE.md` and replaced all placeholder clone URLs with the official GitHub repository link.
+
+---
+
 ## [1.0.1] - 2026-08-30
 
 ### Fixed
-- **Direct Storage Stats Increment**: Fixed skip counters failing to increment by writing directly to `chrome.storage.local` from the content script, eliminating reliance on ephemeral Manifest V3 service workers.
-- **Popup Reset Button**: Fixed non-responsive reset counter button by removing blocked modal `window.confirm()` calls and adding instant visual spin feedback.
+- **Direct Storage Stats Increment**: Switched to direct storage writes from content script, eliminating reliance on ephemeral Manifest V3 background service workers.
+- **Popup Reset Button**: Fixed non-responsive reset counter button by removing blocked modal `window.confirm()` calls and adding instant visual 360° spin feedback.
 - **False-Positive Next Episode Trigger**: Added video playback progress guards (`currentTime < 120s` start lock) and strict exclusion of bottom player control bar (`.watch-video--bottom-controls-container`) to prevent premature episode skipping at startup.
 - **Null-Safety Guards**: Added defensive element checks across all popup UI queries to prevent runtime ReferenceErrors.
 
@@ -32,4 +41,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **On-Screen HUD Toast**: Non-intrusive floating toast notifications inside the player.
 - **Popup Settings & Analytics**: Dark-mode popup dashboard with individual feature toggles and statistics.
 - **Universal Chromium Compatibility**: Full Manifest V3 support for Vivaldi, Chrome, Edge, Brave, Opera, and Arc.
-- **Open Source Foundation**: MIT License, contributing guidelines, and Chrome Web Store submission metadata.
+- **Open Source Foundation**: MIT License and contributing guidelines.

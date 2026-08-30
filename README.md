@@ -49,7 +49,7 @@ This extension is built on modern **Manifest V3** WebExtension standards and wor
 ## 🚀 Installation Guide
 
 ### Option 1: Quick Install via Release ZIP (Recommended)
-1. Download the latest [`netflix-auto-skip-v1.0.1.zip`](dist/netflix-auto-skip-v1.0.1.zip) from the [`dist/`](dist/) folder or [GitHub Releases](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases).
+1. Download the latest [`netflix-auto-skip-v1.0.2.zip`](dist/netflix-auto-skip-v1.0.2.zip) from the [`dist/`](dist/) folder or [GitHub Releases](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases).
 2. Extract the ZIP file into a folder on your computer.
 3. Open your browser's extension management page:
    - **Vivaldi**: `vivaldi://extensions`
@@ -119,7 +119,7 @@ Netflix Auto Skip/
 ├── assets/                  # Project visual assets & infographic
 │   └── infographic.png
 ├── dist/                    # Pre-packaged release zip for users
-│   └── netflix-auto-skip-v1.0.1.zip
+│   └── netflix-auto-skip-v1.0.2.zip
 ├── icons/                   # High-definition PNG icons (16, 32, 48, 128 px)
 │   ├── icon-16.png
 │   ├── icon-32.png
