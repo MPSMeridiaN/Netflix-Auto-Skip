@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Netflix Auto Skip</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Ambient Glow Background -->
+    <div class="ambient-glow"></div>
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="logo-box">
+          <img src="../icons/icon-48.png" alt="Logo" class="logo-img">
+        </div>
+        <div class="brand-info">
+          <div class="brand-title-row">
+            <h1 class="brand-title">Netflix Auto Skip</h1>
+            <span class="pro-badge">PRO</span>
+          </div>
+          <p class="brand-tagline">Seamless Playback Automation</p>
+        </div>
+      </div>
+      <div class="master-switch-container">
+        <label class="switch master" title="Master toggle">
+          <input type="checkbox" id="toggle-enabled" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </header>
+
+    <!-- Real-time Status Card -->
+    <div id="status-card" class="status-card active">
+      <div class="status-indicator">
+        <span class="pulse-ring"></span>
+        <span class="status-dot"></span>
+      </div>
+      <div class="status-details">
+        <span id="status-text" class="status-text">Active & Monitoring Netflix</span>
+        <span class="status-sub">Zero-latency observer running</span>
+      </div>
+    </div>
+
+    <!-- Stats Dashboard -->
+    <section class="dashboard-card">
+      <div class="dashboard-header">
+        <div class="dash-title-group">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20V10"></path>
+            <path d="M18 20V4"></path>
+            <path d="M6 20v-4"></path>
+          </svg>
+          <h2>Time Saved & Analytics</h2>
+        </div>
+        <button id="btn-reset-stats" class="btn-refresh" title="Reset all counters">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+            <path d="M21 3v5h-5"></path>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+            <path d="M3 21v-5h5"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-pill">
+          <span class="stat-num" id="stat-intros">0</span>
+          <span class="stat-tag">Intros</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-num" id="stat-recaps">0</span>
+          <span class="stat-tag">Recaps</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-num" id="stat-credits">0</span>
+          <span class="stat-tag">Next Ep</span>
+        </div>
+        <div class="stat-pill highlight">
+          <span class="stat-num" id="stat-total">0</span>
+          <span class="stat-tag">Total Skips</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controls Section -->
+    <section class="controls-section">
+      <div class="section-label">Automation Preferences</div>
+
+      <!-- Skip Intro -->
+      <div class="control-card">
+        <div class="control-icon-wrapper red">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <polygon points="4,4 14,12 4,20"></polygon>
+            <polygon points="12,4 22,12 12,20"></polygon>
+          </svg>
+        </div>
+        <div class="control-meta">
+          <span class="control-title">Skip Intro</span>
+          <span class="control-desc">Instantly clicks "Skip Intro" on detection</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-skip-intro" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <!-- Skip Recap -->
+      <div class="control-card">
+        <div class="control-icon-wrapper orange">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <polygon points="20,4 10,12 20,20"></polygon>
+            <polygon points="12,4 2,12 12,20"></polygon>
+          </svg>
+        </div>
+        <div class="control-meta">
+          <span class="control-title">Skip Recap</span>
+          <span class="control-desc">Bypasses recap & preplay summaries</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-skip-recap" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <!-- Skip Credits / Next Episode -->
+      <div class="control-card">
+        <div class="control-icon-wrapper purple">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <polygon points="5,4 15,12 5,20"></polygon>
+            <rect x="17" y="4" width="3" height="16" rx="1"></rect>
+          </svg>
+        </div>
+        <div class="control-meta">
+          <span class="control-title">Next Episode</span>
+          <span class="control-desc">Auto-plays next episode during credits</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-skip-credits" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <!-- Dismiss 'Still Watching' -->
+      <div class="control-card">
+        <div class="control-icon-wrapper green">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <polygon points="6,4 20,12 6,20"></polygon>
+          </svg>
+        </div>
+        <div class="control-meta">
+          <span class="control-title">Still Watching</span>
+          <span class="control-desc">Auto-confirms pause interruption prompts</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-auto-continue" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <!-- HUD Notifications -->
+      <div class="control-card">
+        <div class="control-icon-wrapper blue">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </div>
+        <div class="control-meta">
+          <span class="control-title">HUD Overlay</span>
+          <span class="control-desc">Displays sleek on-screen toast on skip</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-show-toast" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-badge">
+        <span class="shield-icon">🛡️</span>
+        <span>100% Private & Open Source</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
