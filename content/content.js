@@ -2,7 +2,7 @@
  * Netflix Auto Skip - Content Script
  * Enterprise-grade, zero-latency DOM observer with Episode Lifecycle State Machine.
  * Prevents race conditions, double-skips, SPA stale DOM glitches, handles manual user actions,
- * and gracefully self-terminates on extension context invalidation.
+ * and uses atomic single-click dispatch to eliminate duplicate React event firing.
  */
 
 (() => {
@@ -35,6 +35,11 @@
   };
 
   /**
+   * Global action mutex to prevent parallel execution during DOM changes
+   */
+  let isActionInProgress = false;
+
+  /**
    * Episode Lifecycle State Machine
    * Tracks episode identity and playback progress to prevent double-skipping
    */
@@ -61,7 +66,7 @@
   const COOLDOWN_DURATIONS = {
     intro: 3000,
     recap: 3000,
-    credits: 30000, // 30-second hard lockout per next-episode trigger
+    credits: 60000, // 60-second hard lockout per next-episode trigger
     prompt: 4000
   };
 
@@ -102,7 +107,7 @@
   function checkAndHandleEpisodeChange() {
     const newKey = getCurrentEpisodeKey();
     if (newKey && newKey !== episodeState.currentKey) {
-      console.log(`[Netflix Auto Skip] Episode changed: ${episodeState.currentKey || 'initial'} -> ${newKey}`);
+      console.log(`[Netflix Auto Skip] Episode transitioned: ${episodeState.currentKey || 'initial'} -> ${newKey}`);
       episodeState.currentKey = newKey;
       episodeState.loadedAt = Date.now();
       episodeState.hasResetToStart = false; // Must observe start-clock on new episode
@@ -164,6 +169,7 @@
 
   /**
    * Verified selector mapping for Netflix player UI elements
+   * (Strictly ordered from most specific to least specific)
    */
   const SELECTORS = {
     intro: [
@@ -180,13 +186,12 @@
       'button[data-uia="skip-preplay"]',
       'button.watch-video--skip-preplay-button'
     ],
-    // Credits & Next Episode must ONLY target genuine post-play countdown overlay buttons
+    // Credits & Next Episode must ONLY target the single primary next-episode button
     credits: [
-      'button[data-uia="next-episode-seamless-button"]',
       'button[data-uia="next-episode-seamless-button-draining"]',
+      'button[data-uia="next-episode-seamless-button"]',
       'button[data-uia="postplay-stream-preview-play"]',
-      '.watch-video--postplay-container button[data-uia*="play"]',
-      '.postplay-container button[data-uia*="play"]'
+      '[data-uia="postplay-container"] button[data-uia="play-button"]'
     ],
     prompt: [
       'button[data-uia="interrupt-continue-playing"]',
@@ -273,24 +278,24 @@
   }
 
   /**
-   * Simulates full mouse and pointer events for React compatibility
+   * Dispatches a single, atomic, standard native click.
+   * Disables the element immediately to prevent duplicate React synthetic events or double-firing.
    */
-  function simulateClick(el) {
+  function performAtomicClick(el) {
     if (!el) return;
     try {
-      const eventOptions = { bubbles: true, cancelable: true, view: window, buttons: 1 };
-      
-      el.dispatchEvent(new PointerEvent('pointerdown', eventOptions));
-      el.dispatchEvent(new MouseEvent('mousedown', eventOptions));
-      el.dispatchEvent(new PointerEvent('pointerup', eventOptions));
-      el.dispatchEvent(new MouseEvent('mouseup', eventOptions));
-      el.dispatchEvent(new MouseEvent('click', eventOptions));
+      // 1. Immediately disable and neutralize element pointer events
+      el.setAttribute('disabled', 'true');
+      el.style.pointerEvents = 'none';
 
-      if (typeof el.click === 'function') {
-        el.click();
+      // 2. Invoke standard native W3C click exactly once
+      el.click();
+    } catch {
+      try {
+        el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+      } catch (err) {
+        console.warn('[Netflix Auto Skip] Click dispatch error:', err);
       }
-    } catch (err) {
-      console.warn('[Netflix Auto Skip] Click dispatch error:', err);
     }
   }
 
@@ -298,8 +303,8 @@
    * Finds matching button with strict multi-layer race-condition guards
    */
   function findElement(type) {
-    // 1. Per-Episode Guard: Once handled in this episode, never trigger again
-    if (episodeState.handled[type]) {
+    // 1. Mutex / Per-Episode Guard: Once handled in this episode, never trigger again
+    if (isActionInProgress || episodeState.handled[type]) {
       return null;
     }
 
@@ -308,7 +313,7 @@
 
     // 2. Credits / Next Episode Strict Guards:
     if (type === 'credits') {
-      // Guard A: 30-second hard lockout since last next-episode skip
+      // Guard A: 60-second hard lockout since last next-episode skip
       if (Date.now() - cooldowns.credits < COOLDOWN_DURATIONS.credits) {
         return null;
       }
@@ -484,6 +489,10 @@
       return false;
     }
 
+    if (isActionInProgress) {
+      return false;
+    }
+
     const now = Date.now();
     if (now - (cooldowns[type] || 0) < COOLDOWN_DURATIONS[type]) {
       return false;
@@ -492,7 +501,8 @@
     const target = findElement(type);
     if (!target) return false;
 
-    // Lock action for current episode immediately
+    // Acquire global lock and mark per-episode handled state immediately
+    isActionInProgress = true;
     episodeState.handled[type] = true;
     cooldowns[type] = now;
 
@@ -501,8 +511,12 @@
       incrementStat(type);
       // 2. Show on-screen toast HUD
       showToastHUD(title, subtitle, TOAST_ICONS[type]);
-      // 3. Dispatch click
-      simulateClick(target);
+      // 3. Dispatch single atomic click
+      performAtomicClick(target);
+      // 4. Release global action lock after 2000ms
+      setTimeout(() => {
+        isActionInProgress = false;
+      }, 2000);
     };
 
     if (config.skipDelayMs > 0) {
@@ -522,7 +536,7 @@
       cleanup();
       return;
     }
-    if (!config.enabled) return;
+    if (!config.enabled || isActionInProgress) return;
 
     // Check if SPA navigated to a new episode
     checkAndHandleEpisodeChange();
@@ -555,7 +569,7 @@
       cleanup();
       return;
     }
-    if (mutationScheduled) return;
+    if (mutationScheduled || isActionInProgress) return;
     mutationScheduled = true;
     requestAnimationFrame(() => {
       scanAndSkip();
@@ -585,7 +599,7 @@
     // Secondary fallback polling (every 800ms)
     pollInterval = setInterval(scanAndSkip, 800);
 
-    console.log('[Netflix Auto Skip] Content script active & monitoring Netflix player with Start-Clock Lifecycle.');
+    console.log('[Netflix Auto Skip] Content script active & monitoring Netflix player with Atomic Single-Click Engine.');
   }
 
   // Start initialization

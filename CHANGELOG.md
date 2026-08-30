@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.5] - 2026-08-30
+
+### Fixed
+- **Root-Cause Double-Click Fix (Atomic Single-Click)**: Replaced duplicate synthetic event firing (`PointerEvent` + `MouseEvent` + `el.click()`) with a single, atomic W3C `el.click()` and immediate element pointer neutralization (`disabled=true`, `pointerEvents='none'`). This resolves the root cause where Netflix's React playlist controller received two click events in the same tick and skipped 2 episodes (e.g. 475 ➔ 477).
+- **Global Action Mutex**: Added `isActionInProgress` lock preventing all concurrent or trailing observer/interval scans from triggering while an episode transition is in progress.
+- **60-Second Hard Lockout**: Extended the next-episode cooldown to 60 seconds to ensure strict single-episode progression.
+
+---
+
 ## [1.0.4] - 2026-08-30
 
 ### Fixed
-- **Start-Clock Confirmation Guard**: Next Episode trigger is now strictly locked until the newly loaded episode's video clock is observed starting from the beginning (`currentTime < 60s`), completely eliminating residual video time from previous episodes causing double skips (e.g. skipping 475 ➔ 476 ➔ 477).
-- **30-Second Next-Episode Cooldown**: Enforced an absolute 30-second lockout on next-episode actions to prevent rapid chaining.
-- **Graceful Context Invalidation Cleanup**: Added `isContextAlive()` checks and auto-cleanup for `MutationObserver` and polling intervals when extension is reloaded in developer mode.
+- **Start-Clock Confirmation Guard**: Next Episode trigger is now strictly locked until `video.currentTime < 60s` has been observed for the new episode.
+- **Context Invalidation Auto-Cleanup**: Added `isContextAlive()` guards and automatic self-destruction of observers and intervals when extension is reloaded.
 
 ---
 
