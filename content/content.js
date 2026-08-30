@@ -282,24 +282,25 @@
   }
 
   /**
-   * Dispatches a single, atomic, standard native click.
-   * Disables the element immediately to prevent duplicate React synthetic events or double-firing.
+   * Dispatches a clean native click to trigger React synthetic event handlers
    */
   function performAtomicClick(el) {
     if (!el) return;
     try {
-      // 1. Immediately disable and neutralize element pointer events
-      el.setAttribute('disabled', 'true');
-      el.style.pointerEvents = 'none';
-
-      // 2. Invoke standard native W3C click exactly once
-      el.click();
-    } catch {
-      try {
-        el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
-      } catch (err) {
-        console.warn('[Netflix Auto Skip] Click dispatch error:', err);
+      if (typeof el.click === 'function') {
+        el.click();
+      } else {
+        el.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            composed: true,
+            view: window
+          })
+        );
       }
+    } catch (err) {
+      console.warn('[Netflix Auto Skip] Click dispatch error:', err);
     }
   }
 

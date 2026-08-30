@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.6] - 2026-08-30
+
+### Fixed
+- **Instant Skip Intro & Recap Execution**: Fixed button click suppression caused by premature element disabling before native click execution, restoring instant intro and recap skipping.
+- **Cross-Instance Zombie Killer**: Dispatched `nas:terminate_instance` event to automatically shut down any previous content script instances running in the tab.
+
+---
+
 ## [1.0.5] - 2026-08-30
 
 ### Fixed
-- **Root-Cause Double-Click Fix (Atomic Single-Click)**: Replaced duplicate synthetic event firing (`PointerEvent` + `MouseEvent` + `el.click()`) with a single, atomic W3C `el.click()` and immediate element pointer neutralization (`disabled=true`, `pointerEvents='none'`). This resolves the root cause where Netflix's React playlist controller received two click events in the same tick and skipped 2 episodes (e.g. 475 ➔ 477).
-- **Global Action Mutex**: Added `isActionInProgress` lock preventing all concurrent or trailing observer/interval scans from triggering while an episode transition is in progress.
-- **60-Second Hard Lockout**: Extended the next-episode cooldown to 60 seconds to ensure strict single-episode progression.
+- **Root-Cause Double-Click Fix**: Replaced duplicate multi-event simulation with a single atomic W3C click to prevent Netflix React playlist controller from advancing two episodes.
+- **Global Action Mutex**: Added `isActionInProgress` lock preventing concurrent observer scans during episode transitions.
+- **60-Second Hard Lockout**: Extended next-episode cooldown to 60 seconds.
 
 ---
 
