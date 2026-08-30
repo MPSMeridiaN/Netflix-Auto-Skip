@@ -293,6 +293,49 @@
   }
 
   /**
+   * Directly increments skip stats in chrome.storage.local (100% reliable, zero SW dependency)
+   */
+  async function incrementStat(skipType) {
+    try {
+      const storage = chrome.storage?.local;
+      if (!storage) return;
+
+      const current = await storage.get({
+        introsSkipped: 0,
+        recapsSkipped: 0,
+        creditsSkipped: 0,
+        promptsDismissed: 0,
+        totalSkipped: 0
+      });
+
+      const stats = {
+        introsSkipped: current.introsSkipped || 0,
+        recapsSkipped: current.recapsSkipped || 0,
+        creditsSkipped: current.creditsSkipped || 0,
+        promptsDismissed: current.promptsDismissed || 0,
+        totalSkipped: current.totalSkipped || 0
+      };
+
+      stats.totalSkipped += 1;
+
+      if (skipType === 'intro') {
+        stats.introsSkipped += 1;
+      } else if (skipType === 'recap') {
+        stats.recapsSkipped += 1;
+      } else if (skipType === 'credits') {
+        stats.creditsSkipped += 1;
+      } else if (skipType === 'prompt') {
+        stats.promptsDismissed += 1;
+      }
+
+      await storage.set(stats);
+      console.log(`[Netflix Auto Skip] Recorded ${skipType} skip. Total: ${stats.totalSkipped}`);
+    } catch (err) {
+      console.warn('[Netflix Auto Skip] Failed to increment stats:', err);
+    }
+  }
+
+  /**
    * Executes skip action with cooldown and notification
    */
   function executeSkip(type, title, subtitle) {
@@ -309,19 +352,7 @@
     const performClick = () => {
       simulateClick(target);
       showToastHUD(title, subtitle, TOAST_ICONS[type]);
-
-      // Report skip to background worker for statistics
-      try {
-        chrome.runtime?.sendMessage?.({
-          type: 'RECORD_SKIP',
-          skipType: type
-        }, () => {
-          // Consume lastError to avoid console warning when service worker is idle
-          if (chrome.runtime?.lastError) { /* no-op */ }
-        });
-      } catch {
-        // Ignore disconnected runtime
-      }
+      incrementStat(type);
     };
 
     if (config.skipDelayMs > 0) {
