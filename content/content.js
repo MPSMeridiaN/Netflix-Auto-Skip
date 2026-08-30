@@ -293,11 +293,11 @@
   }
 
   /**
-   * Directly increments skip stats in chrome.storage.local (100% reliable, zero SW dependency)
+   * Directly increments skip stats in storage (Dispatched before click to prevent navigation drops)
    */
   async function incrementStat(skipType) {
     try {
-      const storage = chrome.storage?.local;
+      const storage = chrome.storage?.local || chrome.storage?.sync;
       if (!storage) return;
 
       const current = await storage.get({
@@ -309,11 +309,11 @@
       });
 
       const stats = {
-        introsSkipped: current.introsSkipped || 0,
-        recapsSkipped: current.recapsSkipped || 0,
-        creditsSkipped: current.creditsSkipped || 0,
-        promptsDismissed: current.promptsDismissed || 0,
-        totalSkipped: current.totalSkipped || 0
+        introsSkipped: Number(current.introsSkipped) || 0,
+        recapsSkipped: Number(current.recapsSkipped) || 0,
+        creditsSkipped: Number(current.creditsSkipped) || 0,
+        promptsDismissed: Number(current.promptsDismissed) || 0,
+        totalSkipped: Number(current.totalSkipped) || 0
       };
 
       stats.totalSkipped += 1;
@@ -328,7 +328,9 @@
         stats.promptsDismissed += 1;
       }
 
-      await storage.set(stats);
+      if (chrome.storage?.local) await chrome.storage.local.set(stats);
+      if (chrome.storage?.sync) await chrome.storage.sync.set(stats);
+
       console.log(`[Netflix Auto Skip] Recorded ${skipType} skip. Total: ${stats.totalSkipped}`);
     } catch (err) {
       console.warn('[Netflix Auto Skip] Failed to increment stats:', err);
@@ -350,9 +352,12 @@
     cooldowns[type] = now;
 
     const performClick = () => {
-      simulateClick(target);
-      showToastHUD(title, subtitle, TOAST_ICONS[type]);
+      // 1. Record stats FIRST before click/navigation can tear down context
       incrementStat(type);
+      // 2. Show on-screen toast HUD
+      showToastHUD(title, subtitle, TOAST_ICONS[type]);
+      // 3. Dispatch click
+      simulateClick(target);
     };
 
     if (config.skipDelayMs > 0) {

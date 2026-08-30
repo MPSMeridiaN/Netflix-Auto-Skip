@@ -113,13 +113,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       updateStatusCard(toggleEnabled ? toggleEnabled.checked : true);
 
+      // Load stats reliably from local or sync storage
       let stats = DEFAULT_STATS;
       try {
-        if (chrome.storage?.local) {
-          stats = await chrome.storage.local.get(DEFAULT_STATS);
+        const localStats = await chrome.storage?.local?.get(DEFAULT_STATS);
+        if (localStats && (localStats.totalSkipped || 0) > 0) {
+          stats = localStats;
+        } else {
+          const syncStats = await chrome.storage?.sync?.get(DEFAULT_STATS);
+          if (syncStats && (syncStats.totalSkipped || 0) > 0) {
+            stats = syncStats;
+          } else if (localStats) {
+            stats = localStats;
+          }
         }
       } catch {
-        // Use defaults if unavailable
+        // Use defaults
       }
       renderStats(stats);
     } catch (err) {
@@ -151,9 +160,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => btnResetStats.classList.remove('spin'), 400);
 
       try {
-        if (chrome.storage?.local) {
-          await chrome.storage.local.set(DEFAULT_STATS);
-        }
+        if (chrome.storage?.local) await chrome.storage.local.set(DEFAULT_STATS);
+        if (chrome.storage?.sync) await chrome.storage.sync.set(DEFAULT_STATS);
       } catch (err) {
         console.warn('[Netflix Auto Skip] Failed to reset stats:', err);
       }
@@ -161,16 +169,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Listen for live updates in storage
+  // Listen for live updates in storage (both local and sync)
   if (chrome.storage?.onChanged) {
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName === 'local') {
-        const hasStatChange = ['introsSkipped', 'recapsSkipped', 'creditsSkipped', 'totalSkipped'].some(
-          (k) => k in changes
-        );
-        if (hasStatChange) {
-          chrome.storage.local.get(DEFAULT_STATS).then(renderStats).catch(() => {});
-        }
+    chrome.storage.onChanged.addListener((changes) => {
+      const hasStatChange = ['introsSkipped', 'recapsSkipped', 'creditsSkipped', 'totalSkipped'].some(
+        (k) => k in changes
+      );
+      if (hasStatChange) {
+        chrome.storage.local.get(DEFAULT_STATS).then(renderStats).catch(() => {});
       }
     });
   }
