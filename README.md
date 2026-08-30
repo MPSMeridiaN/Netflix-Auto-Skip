@@ -92,16 +92,16 @@ Netflix's modern player is a single-page application built on dynamic React stre
        └───────────────────┬───────────────────┘
                            │ Validated
                            ▼
-          [ Synthetic Event Dispatcher ]
-          PointerDown → MouseDown → PointerUp → MouseUp → Click
-                           │
-                           ▼
-          [ Action Execution & Toast HUD ]
+           [ Atomic Click & State Machine ]
+           Episode Lock → Mutex Guard → Atomic Native Click
+                            │
+                            ▼
+           [ Action Execution & Toast HUD ]
 ```
 
 1. **`MutationObserver` + RAF Batching**: Zero CPU overhead; catches DOM changes at 60fps without video stutter.
-2. **Double-Layer Progress Guards**: Strictly prevents next-episode triggers during the opening segment of a video.
-3. **Synthetic Event Dispatcher**: Dispatches full `PointerEvent` and `MouseEvent` sequences required by React's internal synthetic event system.
+2. **Episode Lifecycle State Machine**: URL & title-based tracking ensuring single-execution per action per episode.
+3. **Atomic Single-Click Engine**: Clean W3C native execution preventing duplicate React synthetic event triggers.
 4. **Isolated HUD Styling**: Floating glassmorphism notifications insulated with high z-index and isolated CSS namespaces.
 
 ---
