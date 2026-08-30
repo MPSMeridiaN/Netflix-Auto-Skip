@@ -6,7 +6,7 @@
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-E50914.svg?style=for-the-badge&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F5A623.svg?style=for-the-badge)](LICENSE)
-[![Compatibility](https://img.shields.io/badge/Cross--Browser-Vivaldi%20%7C%20Chrome%20%7C%20Edge%20%7C%20Brave%20%7C%20Opera%20%7C%20Arc-30D158.svg?style=for-the-badge)](#-browser-installation)
+[![Cross Browser](https://img.shields.io/badge/Universal-All%20Chromium%20Browsers-30D158.svg?style=for-the-badge)](#-universal-browser-compatibility)
 [![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local%20%26%20Safe-0A84FF.svg?style=for-the-badge)](#-privacy--security)
 
 <br/>
@@ -17,7 +17,7 @@
 
 ---
 
-## ⚡ Highlights
+## ⚡ Key Highlights
 
 - ⏩ **Instant Intro Skip**: Auto-clicks "Skip Intro" within milliseconds of rendering.
 - ⏪ **Auto Recap Skip**: Bypasses previous episode summaries and preplay recaps automatically.
@@ -30,54 +30,44 @@
 
 ---
 
-## 📦 Instant Download & Release
+## 🌐 Universal Browser Compatibility
 
-Pre-built, production-ready packages are available in the [`dist/`](dist/) folder:
-- **Direct Zip Download**: [`netflix-auto-skip-v1.0.0.zip`](dist/netflix-auto-skip-v1.0.0.zip)
+This extension is built on modern **Manifest V3** WebExtension standards and works identically across **all modern desktop browsers**:
 
----
-
-## 🌐 Browser Installation
-
-Built on the modern **Manifest V3** standard, this extension is compatible with all Chromium-based desktop browsers.
-
-### 🔴 For Vivaldi Browser
-1. Download and extract [`netflix-auto-skip-v1.0.0.zip`](dist/netflix-auto-skip-v1.0.0.zip) (or clone this repository).
-2. Open **Vivaldi** and navigate to:
-   ```text
-   vivaldi://extensions
-   ```
-3. Enable **Developer mode** in the top-right corner.
-4. Click **Load unpacked** in the top-left toolbar.
-5. Select the extracted folder.
-6. Open [Netflix](https://www.netflix.com) and enjoy seamless viewing!
+| Browser | Supported | Engine | Installation Method |
+|:---|:---:|:---|:---|
+| **Vivaldi** | ✅ 100% | Chromium | `vivaldi://extensions` ➔ Load unpacked |
+| **Google Chrome** | ✅ 100% | Chromium | `chrome://extensions` ➔ Load unpacked |
+| **Microsoft Edge** | ✅ 100% | Chromium | `edge://extensions` ➔ Load unpacked |
+| **Brave Browser** | ✅ 100% | Chromium | `brave://extensions` ➔ Load unpacked |
+| **Opera / Opera GX** | ✅ 100% | Chromium | `opera://extensions` ➔ Load unpacked |
+| **Arc Browser** | ✅ 100% | Chromium | `arc://extensions` ➔ Load unpacked |
+| **Chromium / Kiwi** | ✅ 100% | Chromium | Standard unpacked extension |
 
 ---
 
-### 🔵 For Google Chrome & Chromium
-1. Open Chrome and navigate to `chrome://extensions`.
-2. Enable **Developer mode** (toggle in the top-right).
-3. Click **Load unpacked** and select the extension folder.
+## 🚀 Installation Guide
+
+### Option 1: Quick Install via Release ZIP (Recommended)
+1. Download the latest [`netflix-auto-skip-v1.0.0.zip`](dist/netflix-auto-skip-v1.0.0.zip) from the [`dist/`](dist/) folder or GitHub Releases.
+2. Extract the ZIP file into a folder on your computer.
+3. Open your browser's extension management page:
+   - **Vivaldi**: `vivaldi://extensions`
+   - **Chrome**: `chrome://extensions`
+   - **Edge**: `edge://extensions`
+   - **Brave**: `brave://extensions`
+   - **Opera**: `opera://extensions`
+4. Toggle on **Developer mode** (usually in the top-right corner).
+5. Click **Load unpacked** and select the extracted folder.
+6. Open [Netflix](https://www.netflix.com) and start watching!
 
 ---
 
-### 🟦 For Microsoft Edge
-1. Open Edge and navigate to `edge://extensions`.
-2. Turn on **Developer mode** in the left navigation menu.
-3. Click **Load unpacked** and select the folder.
-
----
-
-### 🦁 For Brave Browser
-1. Open Brave and go to `brave://extensions`.
-2. Enable **Developer mode** (top-right).
-3. Click **Load unpacked** and choose the folder.
-
----
-
-### 🔴 For Opera / Opera GX
-1. Open Opera and visit `opera://extensions`.
-2. Turn on **Developer mode** and click **Load unpacked**.
+### Option 2: Install via Git Clone
+```bash
+git clone https://github.com/<YOUR_USERNAME>/netflix-auto-skip.git
+```
+Then load the cloned folder as an unpacked extension using the steps above.
 
 ---
 
@@ -116,7 +106,7 @@ Netflix's modern player is a single-page application built on dynamic React stre
 
 ---
 
-## 📂 Project Structure
+## 📂 Clean Repository Structure
 
 ```
 Netflix Auto Skip/
@@ -124,13 +114,12 @@ Netflix Auto Skip/
 ├── LICENSE                    # MIT Open Source License
 ├── README.md                  # Comprehensive documentation and setup guide
 ├── CONTRIBUTING.md            # Guidelines for open-source contributors
-├── CHROMEWEBSTORE.md          # Chrome Web Store submission metadata
+├── CHROMEWEBSTORE.md          # Chrome Web Store submission metadata & disclosures
 ├── assets/                    # Project visual assets & infographic
 │   └── infographic.png
-├── dist/                      # Production release packages
+├── dist/                      # Pre-packaged release zip for users
 │   └── netflix-auto-skip-v1.0.0.zip
-├── generate-icons.py          # Script for generating crisp high-res icons
-├── icons/                     # Precision icons (16x16, 32x32, 48x48, 128x128)
+├── icons/                     # High-definition PNG icons (16, 32, 48, 128 px)
 │   ├── icon-16.png
 │   ├── icon-32.png
 │   ├── icon-48.png
@@ -140,10 +129,12 @@ Netflix Auto Skip/
 ├── content/
 │   ├── content.js            # Video player observer & synthetic click engine
 │   └── content.css           # Glassmorphism on-screen HUD styling
-└── popup/
-    ├── popup.html            # Luxury dark-mode popup interface
-    ├── popup.css             # Netflix Red glassmorphism styling
-    └── popup.js              # Settings controller and live analytics
+├── popup/
+│   ├── popup.html            # Luxury dark-mode popup interface
+│   ├── popup.css             # Netflix Red glassmorphism styling
+│   └── popup.js              # Settings controller and live analytics
+└── scripts/
+    └── generate-icons.py     # Developer script to regenerate icons
 ```
 
 ---
