@@ -49,7 +49,7 @@ This extension is built on modern **Manifest V3** WebExtension standards and wor
 ## 🚀 Installation Guide
 
 ### Option 1: Quick Install via Release ZIP (Recommended)
-1. Download the latest [`netflix-auto-skip-v1.0.0.zip`](dist/netflix-auto-skip-v1.0.0.zip) from the [`dist/`](dist/) folder or GitHub Releases.
+1. Download the latest [`netflix-auto-skip-v1.0.1.zip`](dist/netflix-auto-skip-v1.0.1.zip) from the [`dist/`](dist/) folder or [GitHub Releases](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases).
 2. Extract the ZIP file into a folder on your computer.
 3. Open your browser's extension management page:
    - **Vivaldi**: `vivaldi://extensions`
@@ -113,13 +113,15 @@ Netflix Auto Skip/
 ├── manifest.json              # Manifest V3 extension configuration
 ├── LICENSE                    # MIT Open Source License
 ├── README.md                  # Comprehensive documentation and setup guide
-├── CONTRIBUTING.md            # Guidelines for open-source contributors
-├── CHROMEWEBSTORE.md          # Chrome Web Store submission metadata & disclosures
-├── assets/                    # Project visual assets & infographic
+├── CHANGELOG.md             # Standard-compliant release and change history
+├── CONTRIBUTING.md          # Guidelines for open-source contributors
+├── CHROMEWEBSTORE.md        # Chrome Web Store submission metadata & disclosures
+├── package.json             # NPM scripts for building, testing, and packaging
+├── assets/                  # Project visual assets & infographic
 │   └── infographic.png
-├── dist/                      # Pre-packaged release zip for users
-│   └── netflix-auto-skip-v1.0.0.zip
-├── icons/                     # High-definition PNG icons (16, 32, 48, 128 px)
+├── dist/                    # Pre-packaged release zip for users
+│   └── netflix-auto-skip-v1.0.1.zip
+├── icons/                   # High-definition PNG icons (16, 32, 48, 128 px)
 │   ├── icon-16.png
 │   ├── icon-32.png
 │   ├── icon-48.png
