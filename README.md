@@ -17,16 +17,16 @@
 
 ---
 
-## ⚡ Key Highlights
+## ⚡ Key Features
 
-- ⏩ **Instant Intro Skip**: Auto-clicks "Skip Intro" within milliseconds of rendering.
-- ⏪ **Auto Recap Skip**: Bypasses previous episode summaries and preplay recaps automatically.
-- ⏭️ **Instant Next Episode**: Skips credit countdowns and transitions to the next episode seamlessly without waiting.
-- ▶️ **Auto-Confirm "Still Watching"**: Automatically handles periodic playback pause prompts for uninterrupted binge-watching sessions.
-- 🔔 **Subtle On-Screen HUD**: Elegant, non-intrusive on-screen notification badge on the Netflix player when an action occurs.
-- 📊 **Real-time Analytics**: Built-in statistics counter tracking all skipped segments and time saved.
-- 🎛️ **Modular Controls**: Enable or disable any automation individually via a dark-mode luxury popup interface.
-- 🛡️ **Zero Tracking**: 100% local execution with no remote scripts, analytics, or external network requests.
+- **Instant Intro Skip** `⚡ 0ms` — Automatically clicks "Skip Intro" within milliseconds of rendering.
+- **Auto Recap Skip** `⏩ Instant` — Bypasses previous episode summaries and preplay recaps automatically.
+- **Instant Next Episode** `⏭️ Seamless` — Skips credit countdowns and transitions to the next episode immediately.
+- **Auto-Confirm "Still Watching"** `▶️ Auto` — Automatically dismisses periodic playback interruption prompts.
+- **On-Screen HUD Toast** `🔔 Overlay` — Displays a sleek, non-intrusive floating glassmorphism notification on skip.
+- **Real-Time Analytics** `📊 Dashboard` — Built-in popup statistics counter tracking total skips and time saved.
+- **Modular Toggle Controls** `🎛️ Custom` — Enable or disable each automation feature independently.
+- **100% Private & Offline** `🛡️ Local` — Runs completely locally with zero tracking, cookies, or telemetry.
 
 ---
 
