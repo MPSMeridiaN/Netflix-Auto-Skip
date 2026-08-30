@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Netflix Auto Skip - Intro, Recap & Credits",
   "short_name": "Netflix Auto Skip",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Automatically skips Netflix intros, recaps, and credits, autoplays next episodes, and dismisses 'Are you still watching?'.",
   "author": "MPSMeridiaN",
   "homepage_url": "https://github.com/MPSMeridiaN/Netflix-Auto-Skip",

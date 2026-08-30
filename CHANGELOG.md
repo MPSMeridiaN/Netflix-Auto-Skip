@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.4] - 2026-08-30
+
+### Fixed
+- **Start-Clock Confirmation Guard**: Next Episode trigger is now strictly locked until the newly loaded episode's video clock is observed starting from the beginning (`currentTime < 60s`), completely eliminating residual video time from previous episodes causing double skips (e.g. skipping 475 ➔ 476 ➔ 477).
+- **30-Second Next-Episode Cooldown**: Enforced an absolute 30-second lockout on next-episode actions to prevent rapid chaining.
+- **Graceful Context Invalidation Cleanup**: Added `isContextAlive()` checks and auto-cleanup for `MutationObserver` and polling intervals when extension is reloaded in developer mode.
+
+---
+
 ## [1.0.3] - 2026-08-30
 
 ### Fixed
-- **Episode Lifecycle State Machine**: Integrated URL-based episode tracking (`/watch/<id>`) that enforces single-action execution per episode, eliminating double-skipping when Netflix natively autoplays next episodes.
-- **SPA Stale DOM Race Condition**: Intercepted HTML5 History API (`pushState`, `replaceState`, `popstate`) and enforced a 15-second lockout window on new episode start to ignore lingering post-play DOM elements from previous episodes.
-- **Manual User Navigation Resilience**: Ensured manual episode switching, scrubbing, and seeking do not trigger accidental or duplicate skip actions.
+- **Episode Lifecycle State Machine**: Integrated URL-based episode tracking (`/watch/<id>`) that locks each action (Intro, Recap, Next Episode) to at most one execution per episode.
+- **SPA Stale DOM Race Condition**: Intercepted HTML5 History API (`pushState`, `replaceState`, `popstate`) and enforced startup lockout.
 
 ---
 
@@ -20,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Pre-Navigation Stats Persistence**: Reordered execution sequence so skip statistics are stored *before* button click dispatch, preventing data write aborts caused by Netflix's immediate URL navigation on next episode / skip.
-- **Dual Storage Synchronization**: Stats are now written concurrently to both `chrome.storage.local` and `chrome.storage.sync` with multi-area storage change listeners for 100% reliable counter updates.
+- **Dual Storage Synchronization**: Stats are now written concurrently to both `chrome.storage.local` and `chrome.storage.sync`.
 - **Clean Repository Metadata**: Removed redundant `CHROMEWEBSTORE.md` and replaced all placeholder clone URLs with the official GitHub repository link.
 
 ---

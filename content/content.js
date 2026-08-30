@@ -1,15 +1,27 @@
 /**
  * Netflix Auto Skip - Content Script
  * Enterprise-grade, zero-latency DOM observer with Episode Lifecycle State Machine.
- * Prevents race conditions, double-skips, SPA stale DOM glitches, and handles manual user actions gracefully.
+ * Prevents race conditions, double-skips, SPA stale DOM glitches, handles manual user actions,
+ * and gracefully self-terminates on extension context invalidation.
  */
 
 (() => {
   'use strict';
 
-  // Prevent duplicate script execution
+  // Prevent duplicate script execution in the same context
   if (window.__netflixAutoSkipLoaded) return;
   window.__netflixAutoSkipLoaded = true;
+
+  /**
+   * Validates if extension runtime context is active
+   */
+  function isContextAlive() {
+    try {
+      return Boolean(chrome && chrome.runtime && chrome.runtime.id);
+    } catch {
+      return false;
+    }
+  }
 
   // Active configuration state
   const config = {
@@ -24,11 +36,12 @@
 
   /**
    * Episode Lifecycle State Machine
-   * Tracks current episode ID and locks actions to prevent double-skips and SPA race conditions.
+   * Tracks episode identity and playback progress to prevent double-skipping
    */
   const episodeState = {
-    currentId: '',
+    currentKey: '',
     loadedAt: 0,
+    hasResetToStart: false, // True once video.currentTime < 60 is observed for current episode
     handled: {
       intro: false,
       recap: false,
@@ -37,7 +50,7 @@
     }
   };
 
-  // Cooldown tracker for rapid click throttling
+  // Cooldown tracker for click throttling
   const cooldowns = {
     intro: 0,
     recap: 0,
@@ -48,27 +61,51 @@
   const COOLDOWN_DURATIONS = {
     intro: 3000,
     recap: 3000,
-    credits: 8000,
+    credits: 30000, // 30-second hard lockout per next-episode trigger
     prompt: 4000
   };
 
+  let observer = null;
+  let pollInterval = null;
+
   /**
-   * Extracts clean Episode ID from Netflix URL (e.g. /watch/81234567)
+   * Cleanly self-terminates observers and intervals if extension is reloaded
    */
-  function getCurrentEpisodeId() {
-    const match = window.location.pathname.match(/\/watch\/(\d+)/);
-    return match ? match[1] : window.location.pathname;
+  function cleanup() {
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+    window.__netflixAutoSkipLoaded = false;
   }
 
   /**
-   * Handles SPA episode transitions and resets per-episode state
+   * Extracts clean Episode key (Watch ID + Title text) from Netflix SPA DOM
+   */
+  function getCurrentEpisodeKey() {
+    const urlMatch = window.location.pathname.match(/\/watch\/(\d+)/);
+    const watchId = urlMatch ? urlMatch[1] : window.location.pathname;
+
+    const titleEl = document.querySelector('[data-uia="video-title"], .video-title, h4');
+    const titleText = titleEl ? titleEl.textContent.trim() : '';
+
+    return `${watchId}:${titleText}`;
+  }
+
+  /**
+   * Detects SPA episode navigation and resets per-episode lifecycle
    */
   function checkAndHandleEpisodeChange() {
-    const newId = getCurrentEpisodeId();
-    if (newId && newId !== episodeState.currentId) {
-      console.log(`[Netflix Auto Skip] Episode changed: ${episodeState.currentId || 'none'} -> ${newId}`);
-      episodeState.currentId = newId;
+    const newKey = getCurrentEpisodeKey();
+    if (newKey && newKey !== episodeState.currentKey) {
+      console.log(`[Netflix Auto Skip] Episode changed: ${episodeState.currentKey || 'initial'} -> ${newKey}`);
+      episodeState.currentKey = newKey;
       episodeState.loadedAt = Date.now();
+      episodeState.hasResetToStart = false; // Must observe start-clock on new episode
       episodeState.handled = {
         intro: false,
         recap: false,
@@ -95,20 +132,28 @@
 
   // Load configuration from storage
   async function loadConfig() {
+    if (!isContextAlive()) {
+      cleanup();
+      return;
+    }
     try {
       const storage = chrome.storage?.sync || chrome.storage?.local;
       if (storage) {
         const stored = await storage.get(config);
         Object.assign(config, stored);
       }
-    } catch (err) {
-      console.warn('[Netflix Auto Skip] Failed to load config:', err);
+    } catch {
+      // Suppress extension context invalidation
     }
   }
 
   // Real-time configuration synchronization
-  if (chrome.storage?.onChanged) {
+  if (isContextAlive() && chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes) => {
+      if (!isContextAlive()) {
+        cleanup();
+        return;
+      }
       for (const [key, change] of Object.entries(changes)) {
         if (key in config) {
           config[key] = change.newValue;
@@ -154,7 +199,7 @@
    * Multi-language regex patterns for fallback heuristic matching
    */
   const TEXT_PATTERNS = {
-    intro: /skip\s*intro|ข้ามบทนำ|ข้ามตอนต้น|passer\s*l'intro|intro\s*überspringen|omitir\s*intro|인트ロ\s*건너뛰기|イントロをスキップ/i,
+    intro: /skip\s*intro|ข้ามบทนำ|ข้ามตอนต้น|passer\s*l'intro|intro\s*überspringen|omitir\s*intro|인트로\s*건너뛰기|イントロをスキップ/i,
     recap: /skip\s*recap|ข้ามบทสรุป|ข้ามสรุป|passer\s*le\s*résumé|rückblick\s*überspringen|omitir\s*resumen|요약\s*건너뛰기/i,
     credits: /next\s*episode|play\s*next|ตอนถัดไป|เล่นตอนต่อไป|épisode\s*suivant|nächste\s*folge|siguiente\s*episodio|다음\s*화/i,
     prompt: /continue\s*watching|continue\s*playing|ดูต่อ|ยืนยันดูต่อ|continuer\s*la\s*lecture|weiterschauen|continuar\s*viendo|계속\s*시청/i
@@ -186,7 +231,7 @@
   }
 
   /**
-   * Evaluates video playback progress and readiness
+   * Evaluates video playback progress and confirms clock reset on episode transitions
    */
   function getVideoState() {
     const video = document.querySelector('video');
@@ -199,15 +244,20 @@
     const progress = currentTime / duration;
     const remaining = duration - currentTime;
 
+    // Observe clock reset to start of new episode (< 60s)
+    if (currentTime < 60) {
+      episodeState.hasResetToStart = true;
+    }
+
     return {
       isValid: true,
       currentTime,
       duration,
       progress,
-      // First 2 minutes of episode or short duration
+      // First 2 minutes of episode or short trailer
       isAtStart: currentTime < 120 || duration < 180,
-      // Near end: Video played past 85% OR within the last 150 seconds of full episode
-      isNearEnd: (progress >= 0.85 || remaining <= 150) && currentTime > 120
+      // Near end: MUST have been observed starting near 0, currentTime > 120s, and >= 85% or <= 150s remaining
+      isNearEnd: episodeState.hasResetToStart && currentTime > 120 && (progress >= 0.85 || remaining <= 150)
     };
   }
 
@@ -258,11 +308,15 @@
 
     // 2. Credits / Next Episode Strict Guards:
     if (type === 'credits') {
-      // Guard A: Must have been on this episode for at least 15 seconds
+      // Guard A: 30-second hard lockout since last next-episode skip
+      if (Date.now() - cooldowns.credits < COOLDOWN_DURATIONS.credits) {
+        return null;
+      }
+      // Guard B: Must have been on this episode for at least 15 seconds
       if (episodeAgeMs < 15000) {
         return null;
       }
-      // Guard B: Video must NOT be at episode start and must be valid
+      // Guard C: Video must have reset to start (<60s) and reached near-end (>85%)
       if (!videoState.isValid || videoState.isAtStart || !videoState.isNearEnd) {
         return null;
       }
@@ -284,7 +338,7 @@
           if (!isElementVisible(el)) continue;
           if (isPlayerControlBarElement(el)) continue;
 
-          // For credits, verify postplay container context
+          // For credits, verify genuine postplay container context
           if (type === 'credits') {
             const isSeamless = el.getAttribute('data-uia')?.includes('seamless');
             const isInPostplay = !!el.closest('.watch-video--postplay-container, .postplay, [data-uia*="postplay"]');
@@ -303,7 +357,7 @@
     // Heuristic fallback (strictly excluding bottom control bar)
     const pattern = TEXT_PATTERNS[type];
     if (pattern) {
-      // For credits heuristic, strictly require postplay container
+      // For credits heuristic, strictly require postplay container and verified near-end
       if (type === 'credits') {
         const postplayContainer = document.querySelector(
           '.watch-video--postplay-container, .postplay, [data-uia*="postplay"], [data-uia*="seamless"]'
@@ -376,6 +430,10 @@
    * Directly increments skip stats in storage (Dispatched before click to prevent navigation drops)
    */
   async function incrementStat(skipType) {
+    if (!isContextAlive()) {
+      cleanup();
+      return;
+    }
     try {
       const storage = chrome.storage?.local || chrome.storage?.sync;
       if (!storage) return;
@@ -412,8 +470,8 @@
       if (chrome.storage?.sync) await chrome.storage.sync.set(stats);
 
       console.log(`[Netflix Auto Skip] Recorded ${skipType} skip. Total: ${stats.totalSkipped}`);
-    } catch (err) {
-      console.warn('[Netflix Auto Skip] Failed to increment stats:', err);
+    } catch {
+      // Gracefully suppress invalidated context errors
     }
   }
 
@@ -421,6 +479,11 @@
    * Executes skip action with state machine locking, cooldown, and notification
    */
   function executeSkip(type, title, subtitle) {
+    if (!isContextAlive()) {
+      cleanup();
+      return false;
+    }
+
     const now = Date.now();
     if (now - (cooldowns[type] || 0) < COOLDOWN_DURATIONS[type]) {
       return false;
@@ -429,7 +492,7 @@
     const target = findElement(type);
     if (!target) return false;
 
-    // Lock action for the current episode immediately
+    // Lock action for current episode immediately
     episodeState.handled[type] = true;
     cooldowns[type] = now;
 
@@ -455,6 +518,10 @@
    * Core scan cycle with SPA episode check
    */
   function scanAndSkip() {
+    if (!isContextAlive()) {
+      cleanup();
+      return;
+    }
     if (!config.enabled) return;
 
     // Check if SPA navigated to a new episode
@@ -484,6 +551,10 @@
   // Throttled mutation handler
   let mutationScheduled = false;
   function handleMutations() {
+    if (!isContextAlive()) {
+      cleanup();
+      return;
+    }
     if (mutationScheduled) return;
     mutationScheduled = true;
     requestAnimationFrame(() => {
@@ -494,6 +565,8 @@
 
   // Initialize Observer & Lifecycle
   async function init() {
+    if (!isContextAlive()) return;
+
     await loadConfig();
     checkAndHandleEpisodeChange();
 
@@ -501,7 +574,7 @@
     scanAndSkip();
 
     // Start MutationObserver for real-time reactivity
-    const observer = new MutationObserver(handleMutations);
+    observer = new MutationObserver(handleMutations);
     observer.observe(document.body || document.documentElement, {
       childList: true,
       subtree: true,
@@ -509,10 +582,10 @@
       attributeFilter: ['class', 'data-uia', 'style']
     });
 
-    // Secondary fallback polling (every 800ms) to ensure nothing is missed
-    setInterval(scanAndSkip, 800);
+    // Secondary fallback polling (every 800ms)
+    pollInterval = setInterval(scanAndSkip, 800);
 
-    console.log('[Netflix Auto Skip] Content script active & monitoring Netflix player with Episode State Machine.');
+    console.log('[Netflix Auto Skip] Content script active & monitoring Netflix player with Start-Clock Lifecycle.');
   }
 
   // Start initialization

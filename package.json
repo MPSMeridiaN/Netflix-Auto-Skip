@@ -1,11 +1,11 @@
 {
   "name": "netflix-auto-skip",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "High-performance open-source browser extension to automate Netflix playback interactions.",
   "main": "background/service-worker.js",
   "scripts": {
     "build:icons": "python scripts/generate-icons.py",
-    "build:zip": "python -c \"import os, zipfile; dist_dir = 'dist'; os.makedirs(dist_dir, exist_ok=True); zip_path = os.path.join(dist_dir, 'netflix-auto-skip-v1.0.3.zip'); include = ['manifest.json', 'LICENSE', 'README.md', 'CHANGELOG.md', 'background/service-worker.js', 'content/content.js', 'content/content.css', 'popup/popup.html', 'popup/popup.css', 'popup/popup.js', 'icons/icon-16.png', 'icons/icon-32.png', 'icons/icon-48.png', 'icons/icon-128.png']; zipf = zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED); [zipf.write(f, f) for f in include if os.path.exists(f)]; zipf.close(); print(f'Built: {zip_path}')\"",
+    "build:zip": "python -c \"import os, zipfile; dist_dir = 'dist'; os.makedirs(dist_dir, exist_ok=True); zip_path = os.path.join(dist_dir, 'netflix-auto-skip-v1.0.4.zip'); include = ['manifest.json', 'LICENSE', 'README.md', 'CHANGELOG.md', 'background/service-worker.js', 'content/content.js', 'content/content.css', 'popup/popup.html', 'popup/popup.css', 'popup/popup.js', 'icons/icon-16.png', 'icons/icon-32.png', 'icons/icon-48.png', 'icons/icon-128.png']; zipf = zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED); [zipf.write(f, f) for f in include if os.path.exists(f)]; zipf.close(); print(f'Built: {zip_path}')\"",
     "validate": "node -c background/service-worker.js && node -c content/content.js && node -c popup/popup.js"
   },
   "keywords": [
