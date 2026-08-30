@@ -1,13 +1,13 @@
 /**
  * Netflix Auto Skip - Content Script
- * Highly optimized, zero-latency DOM observer for Netflix web player.
- * Automatically skips Intros, Recaps, Post-play Credits, and dismisses 'Still Watching' prompts.
+ * Enterprise-grade, zero-latency DOM observer with Episode Lifecycle State Machine.
+ * Prevents race conditions, double-skips, SPA stale DOM glitches, and handles manual user actions gracefully.
  */
 
 (() => {
   'use strict';
 
-  // Prevent multiple injections
+  // Prevent duplicate script execution
   if (window.__netflixAutoSkipLoaded) return;
   window.__netflixAutoSkipLoaded = true;
 
@@ -22,7 +22,22 @@
     skipDelayMs: 0
   };
 
-  // Cooldown tracker to prevent duplicate rapid clicks
+  /**
+   * Episode Lifecycle State Machine
+   * Tracks current episode ID and locks actions to prevent double-skips and SPA race conditions.
+   */
+  const episodeState = {
+    currentId: '',
+    loadedAt: 0,
+    handled: {
+      intro: false,
+      recap: false,
+      credits: false,
+      prompt: false
+    }
+  };
+
+  // Cooldown tracker for rapid click throttling
   const cooldowns = {
     intro: 0,
     recap: 0,
@@ -31,13 +46,54 @@
   };
 
   const COOLDOWN_DURATIONS = {
-    intro: 2500,
-    recap: 2500,
-    credits: 6000,
+    intro: 3000,
+    recap: 3000,
+    credits: 8000,
     prompt: 4000
   };
 
-  // Load configuration from chrome storage
+  /**
+   * Extracts clean Episode ID from Netflix URL (e.g. /watch/81234567)
+   */
+  function getCurrentEpisodeId() {
+    const match = window.location.pathname.match(/\/watch\/(\d+)/);
+    return match ? match[1] : window.location.pathname;
+  }
+
+  /**
+   * Handles SPA episode transitions and resets per-episode state
+   */
+  function checkAndHandleEpisodeChange() {
+    const newId = getCurrentEpisodeId();
+    if (newId && newId !== episodeState.currentId) {
+      console.log(`[Netflix Auto Skip] Episode changed: ${episodeState.currentId || 'none'} -> ${newId}`);
+      episodeState.currentId = newId;
+      episodeState.loadedAt = Date.now();
+      episodeState.handled = {
+        intro: false,
+        recap: false,
+        credits: false,
+        prompt: false
+      };
+    }
+  }
+
+  // Intercept HTML5 History API for instant SPA navigation detection
+  const originalPushState = history.pushState;
+  history.pushState = function (...args) {
+    originalPushState.apply(this, args);
+    checkAndHandleEpisodeChange();
+  };
+
+  const originalReplaceState = history.replaceState;
+  history.replaceState = function (...args) {
+    originalReplaceState.apply(this, args);
+    checkAndHandleEpisodeChange();
+  };
+
+  window.addEventListener('popstate', checkAndHandleEpisodeChange);
+
+  // Load configuration from storage
   async function loadConfig() {
     try {
       const storage = chrome.storage?.sync || chrome.storage?.local;
@@ -50,7 +106,7 @@
     }
   }
 
-  // Listen for real-time configuration changes from popup
+  // Real-time configuration synchronization
   if (chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes) => {
       for (const [key, change] of Object.entries(changes)) {
@@ -79,15 +135,13 @@
       'button[data-uia="skip-preplay"]',
       'button.watch-video--skip-preplay-button'
     ],
-    // Credits & Next Episode must ONLY target post-play countdown/overlay buttons
+    // Credits & Next Episode must ONLY target genuine post-play countdown overlay buttons
     credits: [
       'button[data-uia="next-episode-seamless-button"]',
       'button[data-uia="next-episode-seamless-button-draining"]',
       'button[data-uia="postplay-stream-preview-play"]',
-      '[data-uia="postplay-container"] button[data-uia*="play"]',
-      '.watch-video--postplay-container button',
-      '.postplay-container button',
-      '.postplay-still-container [role="button"]'
+      '.watch-video--postplay-container button[data-uia*="play"]',
+      '.postplay-container button[data-uia*="play"]'
     ],
     prompt: [
       'button[data-uia="interrupt-continue-playing"]',
@@ -97,10 +151,10 @@
   };
 
   /**
-   * Multi-language regex patterns for text/aria-label heuristic matching
+   * Multi-language regex patterns for fallback heuristic matching
    */
   const TEXT_PATTERNS = {
-    intro: /skip\s*intro|ข้ามบทนำ|ข้ามตอนต้น|passer\s*l'intro|intro\s*überspringen|omitir\s*intro|인트로\s*건너뛰기|イントロをスキップ/i,
+    intro: /skip\s*intro|ข้ามบทนำ|ข้ามตอนต้น|passer\s*l'intro|intro\s*überspringen|omitir\s*intro|인트ロ\s*건너뛰기|イントロをスキップ/i,
     recap: /skip\s*recap|ข้ามบทสรุป|ข้ามสรุป|passer\s*le\s*résumé|rückblick\s*überspringen|omitir\s*resumen|요약\s*건너뛰기/i,
     credits: /next\s*episode|play\s*next|ตอนถัดไป|เล่นตอนต่อไป|épisode\s*suivant|nächste\s*folge|siguiente\s*episodio|다음\s*화/i,
     prompt: /continue\s*watching|continue\s*playing|ดูต่อ|ยืนยันดูต่อ|continuer\s*la\s*lecture|weiterschauen|continuar\s*viendo|계속\s*시청/i
@@ -132,21 +186,28 @@
   }
 
   /**
-   * Checks current video playback time to avoid false positives at episode start
+   * Evaluates video playback progress and readiness
    */
-  function getVideoProgress() {
+  function getVideoState() {
     const video = document.querySelector('video');
-    if (!video || !video.duration || isNaN(video.duration)) {
-      return { currentTime: 0, duration: 0, progress: 0, isAtStart: false, isNearEnd: false };
+    if (!video || !video.duration || isNaN(video.duration) || video.duration <= 0) {
+      return { isValid: false, currentTime: 0, duration: 0, progress: 0, isAtStart: true, isNearEnd: false };
     }
-    const progress = video.currentTime / video.duration;
-    const remaining = video.duration - video.currentTime;
+
+    const currentTime = video.currentTime || 0;
+    const duration = video.duration || 0;
+    const progress = currentTime / duration;
+    const remaining = duration - currentTime;
+
     return {
-      currentTime: video.currentTime,
-      duration: video.duration,
+      isValid: true,
+      currentTime,
+      duration,
       progress,
-      isAtStart: video.currentTime < 120, // First 2 minutes
-      isNearEnd: progress >= 0.80 || remaining <= 180 // Last 3 minutes or >= 80%
+      // First 2 minutes of episode or short duration
+      isAtStart: currentTime < 120 || duration < 180,
+      // Near end: Video played past 85% OR within the last 150 seconds of full episode
+      isNearEnd: (progress >= 0.85 || remaining <= 150) && currentTime > 120
     };
   }
 
@@ -154,8 +215,7 @@
    * Checks if an element is visible and interactive in DOM
    */
   function isElementVisible(el) {
-    if (!el) return false;
-    if (el.disabled) return false;
+    if (!el || el.disabled) return false;
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return false;
     const style = window.getComputedStyle(el);
@@ -185,14 +245,35 @@
   }
 
   /**
-   * Finds matching button with strict validation
+   * Finds matching button with strict multi-layer race-condition guards
    */
   function findElement(type) {
-    const videoProgress = getVideoProgress();
-
-    // Guard: NEVER trigger next episode if we are in the first 2 minutes of the video
-    if (type === 'credits' && videoProgress.isAtStart) {
+    // 1. Per-Episode Guard: Once handled in this episode, never trigger again
+    if (episodeState.handled[type]) {
       return null;
+    }
+
+    const videoState = getVideoState();
+    const episodeAgeMs = Date.now() - (episodeState.loadedAt || 0);
+
+    // 2. Credits / Next Episode Strict Guards:
+    if (type === 'credits') {
+      // Guard A: Must have been on this episode for at least 15 seconds
+      if (episodeAgeMs < 15000) {
+        return null;
+      }
+      // Guard B: Video must NOT be at episode start and must be valid
+      if (!videoState.isValid || videoState.isAtStart || !videoState.isNearEnd) {
+        return null;
+      }
+    }
+
+    // 3. Intro / Recap Guards:
+    if (type === 'intro' || type === 'recap') {
+      // Intros & recaps only exist in the first half of an episode
+      if (videoState.isValid && videoState.progress > 0.55) {
+        return null;
+      }
     }
 
     const selectors = SELECTORS[type] || [];
@@ -203,11 +284,11 @@
           if (!isElementVisible(el)) continue;
           if (isPlayerControlBarElement(el)) continue;
 
-          // For credits, ensure postplay context or near end
+          // For credits, verify postplay container context
           if (type === 'credits') {
             const isSeamless = el.getAttribute('data-uia')?.includes('seamless');
             const isInPostplay = !!el.closest('.watch-video--postplay-container, .postplay, [data-uia*="postplay"]');
-            if (!isSeamless && !isInPostplay && !videoProgress.isNearEnd) {
+            if (!isSeamless && !isInPostplay) {
               continue;
             }
           }
@@ -215,15 +296,15 @@
           return el;
         }
       } catch {
-        // Skip invalid selector syntax if any
+        // Skip invalid selector syntax
       }
     }
 
     // Heuristic fallback (strictly excluding bottom control bar)
     const pattern = TEXT_PATTERNS[type];
     if (pattern) {
-      // For credits heuristic, strictly require postplay container or near video end
-      if (type === 'credits' && !videoProgress.isNearEnd) {
+      // For credits heuristic, strictly require postplay container
+      if (type === 'credits') {
         const postplayContainer = document.querySelector(
           '.watch-video--postplay-container, .postplay, [data-uia*="postplay"], [data-uia*="seamless"]'
         );
@@ -235,7 +316,6 @@
         if (!isElementVisible(btn)) continue;
         if (isPlayerControlBarElement(btn)) continue;
 
-        // For intro/recap, ensure button is not in postplay
         if ((type === 'intro' || type === 'recap') && btn.closest('.watch-video--postplay-container')) {
           continue;
         }
@@ -338,7 +418,7 @@
   }
 
   /**
-   * Executes skip action with cooldown and notification
+   * Executes skip action with state machine locking, cooldown, and notification
    */
   function executeSkip(type, title, subtitle) {
     const now = Date.now();
@@ -349,6 +429,8 @@
     const target = findElement(type);
     if (!target) return false;
 
+    // Lock action for the current episode immediately
+    episodeState.handled[type] = true;
     cooldowns[type] = now;
 
     const performClick = () => {
@@ -370,10 +452,13 @@
   }
 
   /**
-   * Core scan cycle
+   * Core scan cycle with SPA episode check
    */
   function scanAndSkip() {
     if (!config.enabled) return;
+
+    // Check if SPA navigated to a new episode
+    checkAndHandleEpisodeChange();
 
     // 1. Check Skip Intro (Priority 1)
     if (config.skipIntro) {
@@ -385,7 +470,7 @@
       if (executeSkip('recap', 'Skipped Recap', 'Netflix Auto Skip')) return;
     }
 
-    // 3. Check Next Episode / Post-play Credits (Only near end or post-play countdown)
+    // 3. Check Next Episode / Post-play Credits (Only near end of full episode, >= 15s in episode)
     if (config.skipCredits) {
       if (executeSkip('credits', 'Playing Next Episode', 'Netflix Auto Skip')) return;
     }
@@ -410,6 +495,7 @@
   // Initialize Observer & Lifecycle
   async function init() {
     await loadConfig();
+    checkAndHandleEpisodeChange();
 
     // Initial check
     scanAndSkip();
@@ -426,7 +512,7 @@
     // Secondary fallback polling (every 800ms) to ensure nothing is missed
     setInterval(scanAndSkip, 800);
 
-    console.log('[Netflix Auto Skip] Content script active & monitoring Netflix player.');
+    console.log('[Netflix Auto Skip] Content script active & monitoring Netflix player with Episode State Machine.');
   }
 
   // Start initialization

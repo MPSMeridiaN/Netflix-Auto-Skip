@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.3] - 2026-08-30
+
+### Fixed
+- **Episode Lifecycle State Machine**: Integrated URL-based episode tracking (`/watch/<id>`) that enforces single-action execution per episode, eliminating double-skipping when Netflix natively autoplays next episodes.
+- **SPA Stale DOM Race Condition**: Intercepted HTML5 History API (`pushState`, `replaceState`, `popstate`) and enforced a 15-second lockout window on new episode start to ignore lingering post-play DOM elements from previous episodes.
+- **Manual User Navigation Resilience**: Ensured manual episode switching, scrubbing, and seeking do not trigger accidental or duplicate skip actions.
+
+---
+
 ## [1.0.2] - 2026-08-30
 
 ### Fixed
