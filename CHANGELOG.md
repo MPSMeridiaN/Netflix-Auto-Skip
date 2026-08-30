@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.7] - 2026-08-30
+
+### Fixed
+- **Instant Next Episode Countdown Bypass**: Expanded post-play & seamless draining button selectors (`[data-uia*="seamless"]`, `[data-uia*="postplay"]`) and refined video progress checks so the end-of-episode countdown is clicked in 0ms without waiting.
+
+---
+
 ## [1.0.6] - 2026-08-30
 
 ### Fixed

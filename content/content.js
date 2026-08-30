@@ -1,8 +1,8 @@
 /**
  * Netflix Auto Skip - Content Script
  * Enterprise-grade, zero-latency DOM observer with Episode Lifecycle State Machine.
- * Prevents race conditions, double-skips, SPA stale DOM glitches, handles manual user actions,
- * and uses atomic single-click dispatch to eliminate duplicate React event firing.
+ * Automatically skips Intros, Recaps, Post-play Credits / Next Episode countdowns,
+ * and dismisses 'Still Watching' prompts instantly.
  */
 
 (() => {
@@ -10,7 +10,6 @@
 
   // Terminate any previous content script instance running in this tab
   window.dispatchEvent(new CustomEvent('nas:terminate_instance'));
-
   window.__netflixAutoSkipLoaded = true;
 
   /**
@@ -42,12 +41,11 @@
 
   /**
    * Episode Lifecycle State Machine
-   * Tracks episode identity and playback progress to prevent double-skipping
+   * Tracks episode identity and prevents duplicate actions within the same episode
    */
   const episodeState = {
     currentKey: '',
     loadedAt: 0,
-    hasResetToStart: false, // True once video.currentTime < 60 is observed for current episode
     handled: {
       intro: false,
       recap: false,
@@ -67,7 +65,7 @@
   const COOLDOWN_DURATIONS = {
     intro: 3000,
     recap: 3000,
-    credits: 60000, // 60-second hard lockout per next-episode trigger
+    credits: 15000, // 15-second cooldown per next-episode trigger
     prompt: 4000
   };
 
@@ -114,7 +112,6 @@
       console.log(`[Netflix Auto Skip] Episode transitioned: ${episodeState.currentKey || 'initial'} -> ${newKey}`);
       episodeState.currentKey = newKey;
       episodeState.loadedAt = Date.now();
-      episodeState.hasResetToStart = false; // Must observe start-clock on new episode
       episodeState.handled = {
         intro: false,
         recap: false,
@@ -173,7 +170,6 @@
 
   /**
    * Verified selector mapping for Netflix player UI elements
-   * (Strictly ordered from most specific to least specific)
    */
   const SELECTORS = {
     intro: [
@@ -190,12 +186,17 @@
       'button[data-uia="skip-preplay"]',
       'button.watch-video--skip-preplay-button'
     ],
-    // Credits & Next Episode must ONLY target the single primary next-episode button
+    // Credits & Next Episode post-play countdown overlay buttons
     credits: [
       'button[data-uia="next-episode-seamless-button-draining"]',
       'button[data-uia="next-episode-seamless-button"]',
       'button[data-uia="postplay-stream-preview-play"]',
-      '[data-uia="postplay-container"] button[data-uia="play-button"]'
+      'button[data-uia="postplay-stream-preview-seamless-next"]',
+      '[data-uia="postplay-container"] button[data-uia*="play"]',
+      '[data-uia="postplay-container"] button[data-uia*="next"]',
+      '.watch-video--postplay-container button',
+      '.postplay-container button',
+      '[data-uia="postplay-background"] button'
     ],
     prompt: [
       'button[data-uia="interrupt-continue-playing"]',
@@ -240,12 +241,12 @@
   }
 
   /**
-   * Evaluates video playback progress and confirms clock reset on episode transitions
+   * Evaluates video playback progress
    */
   function getVideoState() {
     const video = document.querySelector('video');
     if (!video || !video.duration || isNaN(video.duration) || video.duration <= 0) {
-      return { isValid: false, currentTime: 0, duration: 0, progress: 0, isAtStart: true, isNearEnd: false };
+      return { isValid: false, currentTime: 0, duration: 0, progress: 0, isAtStart: false, isNearEnd: false };
     }
 
     const currentTime = video.currentTime || 0;
@@ -253,20 +254,15 @@
     const progress = currentTime / duration;
     const remaining = duration - currentTime;
 
-    // Observe clock reset to start of new episode (< 60s)
-    if (currentTime < 60) {
-      episodeState.hasResetToStart = true;
-    }
-
     return {
       isValid: true,
       currentTime,
       duration,
       progress,
-      // First 2 minutes of episode or short trailer
-      isAtStart: currentTime < 120 || duration < 180,
-      // Near end: MUST have been observed starting near 0, currentTime > 120s, and >= 85% or <= 150s remaining
-      isNearEnd: episodeState.hasResetToStart && currentTime > 120 && (progress >= 0.85 || remaining <= 150)
+      // First 45 seconds of episode
+      isAtStart: currentTime < 45,
+      // Near end: Video played past 75% OR within the last 150 seconds (and past first 45s)
+      isNearEnd: currentTime > 45 && (progress >= 0.75 || remaining <= 150)
     };
   }
 
@@ -314,20 +310,11 @@
     }
 
     const videoState = getVideoState();
-    const episodeAgeMs = Date.now() - (episodeState.loadedAt || 0);
 
-    // 2. Credits / Next Episode Strict Guards:
+    // 2. Credits / Next Episode Guards:
     if (type === 'credits') {
-      // Guard A: 60-second hard lockout since last next-episode skip
-      if (Date.now() - cooldowns.credits < COOLDOWN_DURATIONS.credits) {
-        return null;
-      }
-      // Guard B: Must have been on this episode for at least 15 seconds
-      if (episodeAgeMs < 15000) {
-        return null;
-      }
-      // Guard C: Video must have reset to start (<60s) and reached near-end (>85%)
-      if (!videoState.isValid || videoState.isAtStart || !videoState.isNearEnd) {
+      // Must NOT be at episode start (< 45s)
+      if (videoState.isValid && videoState.isAtStart) {
         return null;
       }
     }
@@ -348,11 +335,11 @@
           if (!isElementVisible(el)) continue;
           if (isPlayerControlBarElement(el)) continue;
 
-          // For credits, verify genuine postplay container context
+          // For credits, verify genuine postplay or countdown context
           if (type === 'credits') {
             const isSeamless = el.getAttribute('data-uia')?.includes('seamless');
             const isInPostplay = !!el.closest('.watch-video--postplay-container, .postplay, [data-uia*="postplay"]');
-            if (!isSeamless && !isInPostplay) {
+            if (!isSeamless && !isInPostplay && !videoState.isNearEnd) {
               continue;
             }
           }
@@ -367,12 +354,11 @@
     // Heuristic fallback (strictly excluding bottom control bar)
     const pattern = TEXT_PATTERNS[type];
     if (pattern) {
-      // For credits heuristic, strictly require postplay container and verified near-end
       if (type === 'credits') {
         const postplayContainer = document.querySelector(
           '.watch-video--postplay-container, .postplay, [data-uia*="postplay"], [data-uia*="seamless"]'
         );
-        if (!postplayContainer) return null;
+        if (!postplayContainer && !videoState.isNearEnd) return null;
       }
 
       const buttons = document.querySelectorAll('button, [role="button"], a.nf-flat-button');
@@ -556,7 +542,7 @@
       if (executeSkip('recap', 'Skipped Recap', 'Netflix Auto Skip')) return;
     }
 
-    // 3. Check Next Episode / Post-play Credits (Only near end of full episode, >= 15s in episode)
+    // 3. Check Next Episode / Post-play Credits (Priority 3)
     if (config.skipCredits) {
       if (executeSkip('credits', 'Playing Next Episode', 'Netflix Auto Skip')) return;
     }
@@ -604,7 +590,7 @@
     // Secondary fallback polling (every 800ms)
     pollInterval = setInterval(scanAndSkip, 800);
 
-    console.log('[Netflix Auto Skip] Content script active & monitoring Netflix player with Atomic Single-Click Engine.');
+    console.log('[Netflix Auto Skip] Content script active & monitoring Netflix player.');
   }
 
   // Start initialization
