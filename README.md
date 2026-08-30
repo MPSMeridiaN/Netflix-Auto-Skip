@@ -65,7 +65,7 @@ This extension is built on modern **Manifest V3** WebExtension standards and wor
 
 ### Option 2: Install via Git Clone
 ```bash
-git clone https://github.com/<YOUR_USERNAME>/netflix-auto-skip.git
+git clone https://github.com/MPSMeridiaN/Netflix-Auto-Skip.git
 ```
 Then load the cloned folder as an unpacked extension using the steps above.
 
