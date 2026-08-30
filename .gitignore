@@ -9,11 +9,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build and Packaging
-*.zip
+# Packaging (allow dist/ release zip)
 *.crx
 *.pem
-dist/
 build/
 
 # IDE / Editor Files
