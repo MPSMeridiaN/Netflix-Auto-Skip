@@ -8,8 +8,9 @@
 (() => {
   'use strict';
 
-  // Prevent duplicate script execution in the same context
-  if (window.__netflixAutoSkipLoaded) return;
+  // Terminate any previous content script instance running in this tab
+  window.dispatchEvent(new CustomEvent('nas:terminate_instance'));
+
   window.__netflixAutoSkipLoaded = true;
 
   /**
@@ -86,7 +87,10 @@
       pollInterval = null;
     }
     window.__netflixAutoSkipLoaded = false;
+    window.removeEventListener('nas:terminate_instance', cleanup);
   }
+
+  window.addEventListener('nas:terminate_instance', cleanup);
 
   /**
    * Extracts clean Episode key (Watch ID + Title text) from Netflix SPA DOM
