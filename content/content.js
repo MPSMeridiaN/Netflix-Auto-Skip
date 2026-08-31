@@ -1,8 +1,8 @@
 /**
  * Netflix Auto Skip - Content Script
- * Enterprise-grade, zero-latency DOM observer with Episode Lifecycle State Machine.
+ * Resilient DOM observer with Episode Lifecycle State Machine.
  * Automatically skips Intros, Recaps, Post-play Credits / Next Episode countdowns,
- * and dismisses 'Still Watching' prompts instantly.
+ * and dismisses 'Still Watching' prompts quietly.
  */
 
 (() => {
@@ -30,12 +30,11 @@
     skipRecap: true,
     skipCredits: true,
     autoContinue: true,
-    showToast: true,
-    skipDelayMs: 0
+    showToast: true
   };
 
   /**
-   * Global action mutex to prevent parallel execution during DOM changes
+   * Global action mutex to prevent duplicate clicks during DOM transitions
    */
   let isActionInProgress = false;
 
@@ -49,12 +48,11 @@
     handled: {
       intro: false,
       recap: false,
-      credits: false,
-      prompt: false
+      credits: false
     }
   };
 
-  // Cooldown tracker for click throttling
+  // Cooldown tracker for click throttling (timestamp in ms)
   const cooldowns = {
     intro: 0,
     recap: 0,
@@ -66,14 +64,14 @@
     intro: 3000,
     recap: 3000,
     credits: 15000, // 15-second cooldown per next-episode trigger
-    prompt: 4000
+    prompt: 4000    // 4-second cooldown for recurring 'still watching' prompts
   };
 
   let observer = null;
   let pollInterval = null;
 
   /**
-   * Cleanly self-terminates observers and intervals if extension is reloaded
+   * Cleanly self-terminates observers and intervals if extension is reloaded or tab changes
    */
   function cleanup() {
     if (observer) {
@@ -89,6 +87,13 @@
   }
 
   window.addEventListener('nas:terminate_instance', cleanup);
+
+  /**
+   * Checks if current page is an active Netflix video playback view
+   */
+  function isWatchPage() {
+    return window.location.pathname.startsWith('/watch') || Boolean(document.querySelector('video'));
+  }
 
   /**
    * Extracts clean Episode key (Watch ID + Title text) from Netflix SPA DOM
@@ -109,14 +114,12 @@
   function checkAndHandleEpisodeChange() {
     const newKey = getCurrentEpisodeKey();
     if (newKey && newKey !== episodeState.currentKey) {
-      console.log(`[Netflix Auto Skip] Episode transitioned: ${episodeState.currentKey || 'initial'} -> ${newKey}`);
       episodeState.currentKey = newKey;
       episodeState.loadedAt = Date.now();
       episodeState.handled = {
         intro: false,
         recap: false,
-        credits: false,
-        prompt: false
+        credits: false
       };
     }
   }
@@ -136,16 +139,25 @@
 
   window.addEventListener('popstate', checkAndHandleEpisodeChange);
 
-  // Load configuration from storage
+  // Load configuration from sync storage (with local fallback)
   async function loadConfig() {
     if (!isContextAlive()) {
       cleanup();
       return;
     }
     try {
-      const storage = chrome.storage?.sync || chrome.storage?.local;
-      if (storage) {
-        const stored = await storage.get(config);
+      let stored = null;
+      if (chrome.storage?.sync) {
+        try {
+          stored = await chrome.storage.sync.get(config);
+        } catch {
+          // Sync disabled or quota exceeded, fallback to local
+        }
+      }
+      if (!stored && chrome.storage?.local) {
+        stored = await chrome.storage.local.get(config);
+      }
+      if (stored) {
         Object.assign(config, stored);
       }
     } catch {
@@ -169,14 +181,13 @@
   }
 
   /**
-   * Verified selector mapping for Netflix player UI elements
+   * Verified targeted selector mapping for Netflix player UI elements
    */
   const SELECTORS = {
     intro: [
       'button[data-uia="player-skip-intro"]',
       '[data-uia="skip-intro"]',
       'button.watch-video--skip-content-button[data-uia*="intro"]',
-      'button.watch-video--skip-content-button',
       'button.nf-flat-button[data-uia*="intro"]'
     ],
     recap: [
@@ -186,21 +197,23 @@
       'button[data-uia="skip-preplay"]',
       'button.watch-video--skip-preplay-button'
     ],
-    // Credits & Next Episode post-play countdown overlay buttons
     credits: [
       'button[data-uia="next-episode-seamless-button-draining"]',
       'button[data-uia="next-episode-seamless-button"]',
       'button[data-uia="postplay-stream-preview-play"]',
       'button[data-uia="postplay-stream-preview-seamless-next"]',
+      'button[data-uia="play-next-button"]',
       '[data-uia="postplay-container"] button[data-uia*="play"]',
       '[data-uia="postplay-container"] button[data-uia*="next"]',
-      '.watch-video--postplay-container button',
-      '.postplay-container button',
-      '[data-uia="postplay-background"] button'
+      '[data-uia="postplay-container"] button[data-uia*="seamless"]',
+      '.watch-video--postplay-container button[data-uia*="play"]',
+      '.watch-video--postplay-container button[data-uia*="next"]',
+      '.watch-video--postplay-container button[data-uia*="seamless"]'
     ],
     prompt: [
       'button[data-uia="interrupt-continue-playing"]',
       'button[data-uia="player-autoplay-interrupter"]',
+      '.interrupter-actions button[data-uia*="continue"]',
       '.interrupter-actions button'
     ]
   };
@@ -226,18 +239,56 @@
   };
 
   /**
-   * Determines if element belongs to regular bottom player controls
-   * (We MUST NEVER click standard player control buttons during regular playback)
+   * Identifies elements that should NEVER be clicked (controls, episode drawers, menus)
    */
-  function isPlayerControlBarElement(el) {
-    if (!el) return false;
+  function isIgnoredElement(el) {
+    if (!el) return true;
+
+    // 1. Bottom playback control bar
     const uia = el.getAttribute('data-uia') || '';
-    if (uia === 'control-next' || uia === 'control-play-pause' || uia === 'control-fullscreen-enter') {
+    if (
+      uia === 'control-next' ||
+      uia === 'control-play-pause' ||
+      uia === 'control-fullscreen-enter' ||
+      uia === 'control-fullscreen-exit' ||
+      uia === 'control-back10' ||
+      uia === 'control-forward10'
+    ) {
       return true;
     }
-    return !!el.closest(
-      '.watch-video--bottom-controls-container, .PlayerControlsNeo__button-control-row, .PlayerControlsNeo__all-controls, .controls-container, [data-uia="controls-container"]'
-    );
+    if (
+      el.closest(
+        '.watch-video--bottom-controls-container, .PlayerControlsNeo__button-control-row, .PlayerControlsNeo__all-controls, .controls-container, [data-uia="controls-container"]'
+      )
+    ) {
+      return true;
+    }
+
+    // 2. Episodes / Season selection drawer & panel
+    if (
+      el.closest(
+        '.episode-list, .episodes-pane, [data-uia*="episode-list"], [data-uia*="episodes-"], [data-uia="episode-selector"]'
+      )
+    ) {
+      return true;
+    }
+
+    // 3. Audio & Subtitles selector drawer
+    if (el.closest('.audio-subtitle-controller, [data-uia*="audio-subtitle"]')) {
+      return true;
+    }
+
+    // 4. Non-action postplay buttons (e.g., "Watch Credits", "Back to Browse")
+    if (
+      uia.includes('watch-credits') ||
+      uia.includes('postplay-background') ||
+      uia.includes('close') ||
+      uia.includes('back-to-browse')
+    ) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -267,12 +318,16 @@
   }
 
   /**
-   * Checks if an element is visible and interactive in DOM
+   * Checks if an element is visible and interactive in DOM with fast bailouts
    */
   function isElementVisible(el) {
     if (!el || el.disabled) return false;
+
+    // Fast check via dimensions
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return false;
+
+    // Check style only after dimensions confirm existence
     const style = window.getComputedStyle(el);
     return style.visibility !== 'hidden' && style.display !== 'none' && style.opacity !== '0';
   }
@@ -304,8 +359,11 @@
    * Finds matching button with strict multi-layer race-condition guards
    */
   function findElement(type) {
-    // 1. Mutex / Per-Episode Guard: Once handled in this episode, never trigger again
-    if (isActionInProgress || episodeState.handled[type]) {
+    // 1. Mutex / Per-Episode Guard: Once handled in this episode, never trigger again (except prompts)
+    if (isActionInProgress) {
+      return null;
+    }
+    if (type !== 'prompt' && episodeState.handled[type]) {
       return null;
     }
 
@@ -322,7 +380,7 @@
     // 3. Intro / Recap Guards:
     if (type === 'intro' || type === 'recap') {
       // Intros & recaps only exist in the first half of an episode
-      if (videoState.isValid && videoState.progress > 0.55) {
+      if (videoState.isValid && videoState.progress > 0.60) {
         return null;
       }
     }
@@ -332,13 +390,15 @@
       try {
         const elements = document.querySelectorAll(selector);
         for (const el of elements) {
+          if (isIgnoredElement(el)) continue;
           if (!isElementVisible(el)) continue;
-          if (isPlayerControlBarElement(el)) continue;
 
           // For credits, verify genuine postplay or countdown context
           if (type === 'credits') {
             const isSeamless = el.getAttribute('data-uia')?.includes('seamless');
-            const isInPostplay = !!el.closest('.watch-video--postplay-container, .postplay, [data-uia*="postplay"]');
+            const isInPostplay = Boolean(
+              el.closest('.watch-video--postplay-container, .postplay, [data-uia*="postplay"]')
+            );
             if (!isSeamless && !isInPostplay && !videoState.isNearEnd) {
               continue;
             }
@@ -351,7 +411,7 @@
       }
     }
 
-    // Heuristic fallback (strictly excluding bottom control bar)
+    // Heuristic fallback (strictly excluding ignored controls and menus)
     const pattern = TEXT_PATTERNS[type];
     if (pattern) {
       if (type === 'credits') {
@@ -363,8 +423,8 @@
 
       const buttons = document.querySelectorAll('button, [role="button"], a.nf-flat-button');
       for (const btn of buttons) {
+        if (isIgnoredElement(btn)) continue;
         if (!isElementVisible(btn)) continue;
-        if (isPlayerControlBarElement(btn)) continue;
 
         if ((type === 'intro' || type === 'recap') && btn.closest('.watch-video--postplay-container')) {
           continue;
@@ -423,18 +483,14 @@
   }
 
   /**
-   * Directly increments skip stats in storage (Dispatched before click to prevent navigation drops)
+   * Increments skip statistics in chrome.storage.local (single source of truth for stats)
    */
   async function incrementStat(skipType) {
-    if (!isContextAlive()) {
-      cleanup();
+    if (!isContextAlive() || !chrome.storage?.local) {
       return;
     }
     try {
-      const storage = chrome.storage?.local || chrome.storage?.sync;
-      if (!storage) return;
-
-      const current = await storage.get({
+      const current = await chrome.storage.local.get({
         introsSkipped: 0,
         recapsSkipped: 0,
         creditsSkipped: 0,
@@ -462,12 +518,9 @@
         stats.promptsDismissed += 1;
       }
 
-      if (chrome.storage?.local) await chrome.storage.local.set(stats);
-      if (chrome.storage?.sync) await chrome.storage.sync.set(stats);
-
-      console.log(`[Netflix Auto Skip] Recorded ${skipType} skip. Total: ${stats.totalSkipped}`);
+      await chrome.storage.local.set(stats);
     } catch {
-      // Gracefully suppress invalidated context errors
+      // Gracefully suppress storage errors during tab navigation
     }
   }
 
@@ -492,29 +545,26 @@
     const target = findElement(type);
     if (!target) return false;
 
-    // Acquire global lock and mark per-episode handled state immediately
+    // Acquire global lock and update state
     isActionInProgress = true;
-    episodeState.handled[type] = true;
+    if (type !== 'prompt') {
+      episodeState.handled[type] = true;
+    }
     cooldowns[type] = now;
 
-    const performClick = () => {
-      // 1. Record stats FIRST before click/navigation can tear down context
-      incrementStat(type);
-      // 2. Show on-screen toast HUD
-      showToastHUD(title, subtitle, TOAST_ICONS[type]);
-      // 3. Dispatch single atomic click
-      performAtomicClick(target);
-      // 4. Release global action lock after 2000ms
-      setTimeout(() => {
-        isActionInProgress = false;
-      }, 2000);
-    };
+    // 1. Record stats FIRST before click/navigation can tear down context
+    incrementStat(type);
 
-    if (config.skipDelayMs > 0) {
-      setTimeout(performClick, config.skipDelayMs);
-    } else {
-      performClick();
-    }
+    // 2. Show on-screen toast HUD
+    showToastHUD(title, subtitle, TOAST_ICONS[type]);
+
+    // 3. Dispatch single atomic click
+    performAtomicClick(target);
+
+    // 4. Release global action lock after 2000ms
+    setTimeout(() => {
+      isActionInProgress = false;
+    }, 2000);
 
     return true;
   }
@@ -528,6 +578,9 @@
       return;
     }
     if (!config.enabled || isActionInProgress) return;
+
+    // If not on watch page and no video player is present, skip heavy DOM scanning
+    if (!isWatchPage()) return;
 
     // Check if SPA navigated to a new episode
     checkAndHandleEpisodeChange();
@@ -560,7 +613,7 @@
       cleanup();
       return;
     }
-    if (mutationScheduled || isActionInProgress) return;
+    if (!isWatchPage() || mutationScheduled || isActionInProgress) return;
     mutationScheduled = true;
     requestAnimationFrame(() => {
       scanAndSkip();
@@ -587,10 +640,8 @@
       attributeFilter: ['class', 'data-uia', 'style']
     });
 
-    // Secondary fallback polling (every 800ms)
-    pollInterval = setInterval(scanAndSkip, 800);
-
-    console.log('[Netflix Auto Skip] Content script active & monitoring Netflix player.');
+    // Secondary fallback polling (every 1000ms)
+    pollInterval = setInterval(scanAndSkip, 1000);
   }
 
   // Start initialization
@@ -600,3 +651,4 @@
     init();
   }
 })();
+

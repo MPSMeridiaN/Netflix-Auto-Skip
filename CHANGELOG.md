@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-08-31
+
+### Added
+- **Multi-Layer False-Positive Protection**: Added explicit exclusion filters for player control bars, episode picker drawers, audio/subtitle selection panels, and non-action postplay buttons.
+- **Dedicated Technical Architecture Doc**: Created [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) detailing DOM observation lifecycle, state machine transitions, and storage isolation.
+- **Official Web Store Guide**: Created [`CHROMEWEBSTORE.md`](CHROMEWEBSTORE.md) with metadata, permissions justifications, and privacy disclosures.
+- **Reproducible Build Script**: Added automated `scripts/build-zip.py` and `npm run build` command for reproducible release packaging.
+
+### Changed
+- **Route-Scoped Performance**: Active DOM observation and polling now strictly activate on watch pages (`/watch/*`) or when video elements are mounted, dropping CPU overhead to near-zero while browsing Netflix catalogs.
+- **Still Watching Cooldown**: Transitioned "Still Watching" pause interrupters from permanent episode locks to a 4-second cooldown, ensuring recurring prompts during long binge sessions are properly dismissed.
+- **Clean Storage Ownership**: User preferences reside in `chrome.storage.sync` (with local fallback) while skip statistics reside strictly in `chrome.storage.local`.
+- **Product Documentation Overhaul**: Modernized `README.md` into a visual-first, concise, premium product page with honest privacy disclosures.
+
+### Fixed
+- **Dead Code Elimination**: Removed obsolete `RECORD_SKIP` and `GET_CONFIG` service worker listeners and unused configuration keys.
+- **Icon Generator Path**: Fixed `scripts/generate-icons.py` output directory to target root `icons/` folder directly.
+
+---
+
 ## [1.0.7] - 2026-08-30
 
 ### Fixed

@@ -106,7 +106,7 @@ def create_premium_icon(size=1024):
     return img
 
 def main():
-    icons_dir = os.path.join(os.path.dirname(__file__), "icons")
+    icons_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons"))
     os.makedirs(icons_dir, exist_ok=True)
     
     master = create_premium_icon(1024)

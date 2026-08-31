@@ -2,158 +2,96 @@
 
 # 🎬 Netflix Auto Skip
 
-**A high-performance, zero-latency open-source browser extension that automates Netflix playback interactions — instantly skipping intros, recaps, post-play credits, and auto-dismissing 'Are you still watching?' interruptions.**
+**A lightweight, open-source browser extension that quietly removes Netflix playback interruptions.**
 
-[![Manifest V3](https://img.shields.io/badge/Manifest-V3-E50914.svg?style=for-the-badge&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-F5A623.svg?style=for-the-badge)](LICENSE)
-[![Cross Browser](https://img.shields.io/badge/Universal-All%20Chromium%20Browsers-30D158.svg?style=for-the-badge)](#-universal-browser-compatibility)
-[![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local%20%26%20Safe-0A84FF.svg?style=for-the-badge)](#-privacy--security)
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-E50914.svg?style=flat-square&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-F5A623.svg?style=flat-square)](LICENSE)
+[![Chromium Compatible](https://img.shields.io/badge/Universal-Chromium%20Browsers-30D158.svg?style=flat-square)](#-browser-compatibility)
+[![Privacy: 100% Local](https://img.shields.io/badge/Privacy-100%25%20Offline-0A84FF.svg?style=flat-square)](#-privacy--security)
 
 <br/>
 
-<img src="assets/infographic.png" alt="Netflix Auto Skip Infographic" width="850" style="border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,0.6);" />
+<img src="assets/infographic.png" alt="Netflix Auto Skip Overview" width="820" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);" />
+
+<br/>
+
+> *Install it, forget it, and let it quietly remove interruptions.*
 
 </div>
 
 ---
 
-## ⚡ Key Features
+## ✨ Features
 
-- **Instant Intro Skip** `⚡ 0ms` — Automatically clicks "Skip Intro" within milliseconds of rendering.
-- **Auto Recap Skip** `⏩ Instant` — Bypasses previous episode summaries and preplay recaps automatically.
-- **Instant Next Episode** `⏭️ Seamless` — Skips credit countdowns and transitions to the next episode immediately.
-- **Auto-Confirm "Still Watching"** `▶️ Auto` — Automatically dismisses periodic playback interruption prompts.
-- **On-Screen HUD Toast** `🔔 Overlay` — Displays a sleek, non-intrusive floating glassmorphism notification on skip.
-- **Real-Time Analytics** `📊 Dashboard` — Built-in popup statistics counter tracking total skips and time saved.
-- **Modular Toggle Controls** `🎛️ Custom` — Enable or disable each automation feature independently.
-- **100% Private & Offline** `🛡️ Local` — Runs completely locally with zero tracking, cookies, or telemetry.
-
----
-
-## 🌐 Universal Browser Compatibility
-
-This extension is built on modern **Manifest V3** WebExtension standards and works identically across **all modern desktop browsers**:
-
-| Browser | Supported | Engine | Installation Method |
-|:---|:---:|:---|:---|
-| **Vivaldi** | ✅ 100% | Chromium | `vivaldi://extensions` ➔ Load unpacked |
-| **Google Chrome** | ✅ 100% | Chromium | `chrome://extensions` ➔ Load unpacked |
-| **Microsoft Edge** | ✅ 100% | Chromium | `edge://extensions` ➔ Load unpacked |
-| **Brave Browser** | ✅ 100% | Chromium | `brave://extensions` ➔ Load unpacked |
-| **Opera / Opera GX** | ✅ 100% | Chromium | `opera://extensions` ➔ Load unpacked |
-| **Arc Browser** | ✅ 100% | Chromium | `arc://extensions` ➔ Load unpacked |
-| **Chromium / Kiwi** | ✅ 100% | Chromium | Standard unpacked extension |
+- **Skip Intro** — Clicks "Skip Intro" as soon as it appears on screen.
+- **Skip Recap** — Automatically bypasses previous episode summaries.
+- **Next Episode** — Skips post-play credit countdowns to play the next episode immediately.
+- **Auto-Confirm "Still Watching"** — Dismisses playback pause prompts during binge sessions.
+- **On-Screen HUD Toast** — Sleek, subtle floating indicator when an action occurs (optional).
+- **Customizable Toggles** — Turn individual automation features on or off anytime via the popup.
+- **Local Stats Counter** — Tracks your total skips and time saved directly on your machine.
 
 ---
 
-## 🚀 Installation Guide
+## 🚀 Quick Install (3 Steps)
 
-### Option 1: Quick Install via Release ZIP (Recommended)
-1. Download the latest [`netflix-auto-skip-v1.0.7.zip`](dist/netflix-auto-skip-v1.0.7.zip) from the [`dist/`](dist/) folder or [GitHub Releases](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases).
-2. Extract the ZIP file into a folder on your computer.
-3. Open your browser's extension management page:
-   - **Vivaldi**: `vivaldi://extensions`
-   - **Chrome**: `chrome://extensions`
-   - **Edge**: `edge://extensions`
-   - **Brave**: `brave://extensions`
-   - **Opera**: `opera://extensions`
-4. Toggle on **Developer mode** (usually in the top-right corner).
-5. Click **Load unpacked** and select the extracted folder.
-6. Open [Netflix](https://www.netflix.com) and start watching!
+1. **Download Release**: Grab [`netflix-auto-skip-v1.1.0.zip`](dist/netflix-auto-skip-v1.1.0.zip) from the [`dist/`](dist/) folder or [GitHub Releases](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases).
+2. **Extract ZIP**: Extract the archive to a folder on your computer.
+3. **Load Extension**:
+   - Open your browser's extension page (e.g. `chrome://extensions` or `vivaldi://extensions`).
+   - Enable **Developer mode** (top-right toggle).
+   - Click **Load unpacked** and select the extracted folder.
+
+*Open [Netflix](https://www.netflix.com) and start watching!*
 
 ---
 
-### Option 2: Install via Git Clone
-```bash
-git clone https://github.com/MPSMeridiaN/Netflix-Auto-Skip.git
-```
-Then load the cloned folder as an unpacked extension using the steps above.
+## 🌐 Browser Compatibility
+
+Works with all modern Chromium-based desktop browsers:
+
+| Browser | Support | Installation Path |
+| :--- | :---: | :--- |
+| **Google Chrome** | ✅ | `chrome://extensions` |
+| **Vivaldi** | ✅ | `vivaldi://extensions` |
+| **Microsoft Edge** | ✅ | `edge://extensions` |
+| **Brave** | ✅ | `brave://extensions` |
+| **Opera / Opera GX** | ✅ | `opera://extensions` |
+| **Arc** | ✅ | `arc://extensions` |
 
 ---
 
-## 🏗️ Architecture & Engine Details
+## 🛠️ How It Works
 
-Netflix's modern player is a single-page application built on dynamic React streaming components. Standard extension scripts often run into race conditions or trigger issues. Netflix Auto Skip solves this using a multi-layer engine:
-
-```
-┌────────────────────────────────────────────────────────┐
-│               Netflix Video Player DOM                 │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                 [ MutationObserver ] (Batched with RAF)
-                           │
-       ┌───────────────────┴───────────────────┐
-       ▼                                       ▼
-[ Button Detection ]                   [ Video Progress Guard ]
-- [data-uia="player-skip-intro"]       - Start Guard (< 2m): Blocks next ep
-- [data-uia="player-skip-recap"]       - End Guard (> 80% / < 180s): Allows postplay
-- [data-uia="next-episode-seamless"]   - Strict exclusion of bottom control bar
-       │                                       │
-       └───────────────────┬───────────────────┘
-                           │ Validated
-                           ▼
-           [ Atomic Click & State Machine ]
-           Episode Lock → Mutex Guard → Atomic Native Click
-                            │
-                            ▼
-           [ Action Execution & Toast HUD ]
+```mermaid
+graph LR
+    A[Netflix Video Player] --> B[DOM Observer]
+    B --> C{Safe Guards}
+    C -->|Valid Skip Button| D[Atomic Click]
+    C -->|Player Controls / Menus| E[Ignored]
+    D --> F[HUD Toast & Local Stats]
 ```
 
-1. **`MutationObserver` + RAF Batching**: Zero CPU overhead; catches DOM changes at 60fps without video stutter.
-2. **Episode Lifecycle State Machine**: URL & title-based tracking ensuring single-execution per action per episode.
-3. **Atomic Single-Click Engine**: Clean W3C native execution preventing duplicate React synthetic event triggers.
-4. **Isolated HUD Styling**: Floating glassmorphism notifications insulated with high z-index and isolated CSS namespaces.
+- **Targeted Selectors**: Matches verified Netflix skip buttons while explicitly excluding player controls, audio/subtitle menus, and episode drawers.
+- **Episode State Machine**: Tracks episode transitions so each skip action runs at most once per episode.
+- **Low Overhead**: Scoped to active playback views (`/watch/*`) and throttled with `requestAnimationFrame`.
 
----
-
-## 📂 Clean Repository Structure
-
-```
-Netflix Auto Skip/
-├── manifest.json              # Manifest V3 extension configuration
-├── LICENSE                    # MIT Open Source License
-├── README.md                  # Comprehensive documentation and setup guide
-├── CHANGELOG.md             # Standard-compliant release and change history
-├── CONTRIBUTING.md          # Guidelines for open-source contributors
-├── package.json             # NPM scripts for building, testing, and packaging
-├── assets/                  # Project visual assets & infographic
-│   └── infographic.png
-├── dist/                    # Pre-packaged release zip for users
-│   └── netflix-auto-skip-v1.0.7.zip
-├── icons/                   # High-definition PNG icons (16, 32, 48, 128 px)
-│   ├── icon-16.png
-│   ├── icon-32.png
-│   ├── icon-48.png
-│   └── icon-128.png
-├── background/
-│   └── service-worker.js     # Service worker (state synchronization & storage)
-├── content/
-│   ├── content.js            # Video player observer & synthetic click engine
-│   └── content.css           # Glassmorphism on-screen HUD styling
-├── popup/
-│   ├── popup.html            # Luxury dark-mode popup interface
-│   ├── popup.css             # Netflix Red glassmorphism styling
-│   └── popup.js              # Settings controller and live analytics
-└── scripts/
-    └── generate-icons.py     # Developer script to regenerate icons
-```
+*For detailed architectural specifications, state machine transitions, and design diagrams, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).*
 
 ---
 
 ## 🔒 Privacy & Security
 
-- **Strict Scoping**: Host permissions are limited solely to `*://*.netflix.com/*`.
-- **Zero Data Collection**: No cookies, account information, browsing history, or viewing metrics are ever logged, sent, or shared.
-- **Local Storage**: All preferences and skip statistics reside 100% locally on your machine via `chrome.storage`.
-
----
-
-## 🤝 Contributing
-
-Contributions, feature requests, and bug reports are welcome! Check out [CONTRIBUTING.md](CONTRIBUTING.md) to get involved.
+- **100% Offline**: Zero external network requests, zero telemetry, and zero analytics.
+- **Scoped Permission**: Operates strictly on `*://*.netflix.com/*`.
+- **Transparent Storage**:
+  - User toggle settings sync across your own logged-in browser profile via `chrome.storage.sync` (with local fallback).
+  - Skip counts stay strictly on your local device in `chrome.storage.local`.
+- **No Account Access**: The extension cannot read your passwords, cookies, or payment details.
 
 ---
 
 ## 📄 License
 
 Distributed under the [MIT License](LICENSE).
+

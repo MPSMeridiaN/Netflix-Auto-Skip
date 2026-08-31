@@ -28,8 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     skipRecap: true,
     skipCredits: true,
     autoContinue: true,
-    showToast: true,
-    skipDelayMs: 0
+    showToast: true
   };
 
   const DEFAULT_STATS = {
@@ -40,26 +39,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     totalSkipped: 0
   };
 
-  // Safe storage access helper
-  async function getStorage(keys) {
+  // Storage helpers: Settings (sync with local fallback)
+  async function getSettings() {
     try {
       if (chrome.storage?.sync) {
-        return await chrome.storage.sync.get(keys);
+        return await chrome.storage.sync.get(DEFAULT_SETTINGS);
       }
     } catch {
-      // Fallback
+      // Fallback to local
     }
     try {
       if (chrome.storage?.local) {
-        return await chrome.storage.local.get(keys);
+        return await chrome.storage.local.get(DEFAULT_SETTINGS);
       }
     } catch {
-      // Fallback to default keys
+      // Ignore
     }
-    return keys;
+    return DEFAULT_SETTINGS;
   }
 
-  async function setStorage(items) {
+  async function setSettings(items) {
     try {
       if (chrome.storage?.sync) {
         await chrome.storage.sync.set(items);
@@ -77,7 +76,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Update Status Card UI (with complete null safety)
+  // Storage helpers: Stats (strictly local)
+  async function getStats() {
+    try {
+      if (chrome.storage?.local) {
+        return await chrome.storage.local.get(DEFAULT_STATS);
+      }
+    } catch {
+      // Ignore
+    }
+    return DEFAULT_STATS;
+  }
+
+  // Update Status Card UI
   function updateStatusCard(isEnabled) {
     if (!statusCard) return;
     if (isEnabled) {
@@ -91,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Render Stats Numbers (with complete null safety)
+  // Render Stats Numbers
   function renderStats(stats) {
     const s = { ...DEFAULT_STATS, ...stats };
     if (statIntros) statIntros.textContent = (s.introsSkipped || 0).toLocaleString();
@@ -103,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load Initial Settings & Stats
   async function loadInitialData() {
     try {
-      const settings = await getStorage(DEFAULT_SETTINGS);
+      const settings = await getSettings();
       if (toggleEnabled) toggleEnabled.checked = settings.enabled ?? true;
       if (toggleSkipIntro) toggleSkipIntro.checked = settings.skipIntro ?? true;
       if (toggleSkipRecap) toggleSkipRecap.checked = settings.skipRecap ?? true;
@@ -113,35 +124,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       updateStatusCard(toggleEnabled ? toggleEnabled.checked : true);
 
-      // Load stats reliably from local or sync storage
-      let stats = DEFAULT_STATS;
-      try {
-        const localStats = await chrome.storage?.local?.get(DEFAULT_STATS);
-        if (localStats && (localStats.totalSkipped || 0) > 0) {
-          stats = localStats;
-        } else {
-          const syncStats = await chrome.storage?.sync?.get(DEFAULT_STATS);
-          if (syncStats && (syncStats.totalSkipped || 0) > 0) {
-            stats = syncStats;
-          } else if (localStats) {
-            stats = localStats;
-          }
-        }
-      } catch {
-        // Use defaults
-      }
+      const stats = await getStats();
       renderStats(stats);
     } catch (err) {
       console.error('[Netflix Auto Skip] Failed to load popup data:', err);
     }
   }
 
-  // Setup Event Listeners for Toggles (with complete null safety)
+  // Setup Event Listeners for Toggles
   function bindToggle(element, key, onToggleExtra) {
     if (!element) return;
     element.addEventListener('change', async (e) => {
       const value = e.target.checked;
-      await setStorage({ [key]: value });
+      await setSettings({ [key]: value });
       if (onToggleExtra) onToggleExtra(value);
     });
   }
@@ -161,7 +156,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       try {
         if (chrome.storage?.local) await chrome.storage.local.set(DEFAULT_STATS);
-        if (chrome.storage?.sync) await chrome.storage.sync.set(DEFAULT_STATS);
       } catch (err) {
         console.warn('[Netflix Auto Skip] Failed to reset stats:', err);
       }
@@ -169,17 +163,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Listen for live updates in storage (both local and sync)
+  // Listen for live updates in storage
   if (chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes) => {
-      const hasStatChange = ['introsSkipped', 'recapsSkipped', 'creditsSkipped', 'totalSkipped'].some(
+      const hasStatChange = ['introsSkipped', 'recapsSkipped', 'creditsSkipped', 'promptsDismissed', 'totalSkipped'].some(
         (k) => k in changes
       );
       if (hasStatChange) {
-        chrome.storage.local.get(DEFAULT_STATS).then(renderStats).catch(() => {});
+        getStats().then(renderStats).catch(() => {});
       }
     });
   }
 
   await loadInitialData();
 });
+

@@ -1,7 +1,7 @@
 /**
- * Netflix Auto Skip - Enterprise QA Dry-Run Test Runner
- * Comprehensive unit and integration test suite executing full behavioral QA
- * across all functions, edge cases, state transitions, and UI toggles.
+ * Netflix Auto Skip - Production QA Dry-Run Test Suite
+ * Comprehensive automated verification covering selectors, false-positive prevention,
+ * state machine transitions, SPA navigation, storage isolation, and edge cases.
  */
 
 const assert = require('assert');
@@ -44,7 +44,9 @@ class MockChromeStorageArea {
     }
     if (Array.isArray(keys)) {
       const res = {};
-      keys.forEach(k => { res[k] = this.data[k]; });
+      keys.forEach((k) => {
+        res[k] = this.data[k];
+      });
       return res;
     }
     if (typeof keys === 'object') {
@@ -101,10 +103,20 @@ class MockElement {
 
   closest(selector) {
     let curr = this;
+    const parts = selector.split(',').map((s) => s.trim());
     while (curr) {
-      if (selector.includes('bottom-controls') && curr.attributes['class']?.includes('bottom-controls')) return curr;
-      if (selector.includes('postplay') && curr.attributes['data-uia']?.includes('postplay')) return curr;
-      if (selector.includes('postplay') && curr.attributes['class']?.includes('postplay')) return curr;
+      for (const part of parts) {
+        if (part.includes('bottom-controls') && curr.attributes['class']?.includes('bottom-controls')) return curr;
+        if (part.includes('episode-list') && curr.attributes['class']?.includes('episode-list')) return curr;
+        if (part.includes('episodes-pane') && curr.attributes['class']?.includes('episodes-pane')) return curr;
+        if (part.includes('episodes-') && curr.attributes['data-uia']?.includes('episodes-')) return curr;
+        if (part.includes('episode-selector') && curr.attributes['data-uia']?.includes('episode-selector')) return curr;
+        if (part.includes('audio-subtitle') && curr.attributes['class']?.includes('audio-subtitle')) return curr;
+        if (part.includes('audio-subtitle') && curr.attributes['data-uia']?.includes('audio-subtitle')) return curr;
+        if (part.includes('postplay') && curr.attributes['data-uia']?.includes('postplay')) return curr;
+        if (part.includes('postplay') && curr.attributes['class']?.includes('postplay')) return curr;
+        if (part.includes('seamless') && curr.attributes['data-uia']?.includes('seamless')) return curr;
+      }
       curr = curr.parentNode;
     }
     return null;
@@ -153,7 +165,9 @@ global.window = {
   addEventListener: () => {},
   removeEventListener: () => {},
   dispatchEvent: () => {},
-  CustomEvent: function(name) { this.name = name; }
+  CustomEvent: function (name) {
+    this.name = name;
+  }
 };
 
 global.document = {
@@ -165,14 +179,17 @@ global.document = {
   createElement: (tag) => new MockElement(tag)
 };
 
-global.MouseEvent = function(type, opts) { this.type = type; Object.assign(this, opts); };
+global.MouseEvent = function (type, opts) {
+  this.type = type;
+  Object.assign(this, opts);
+};
 global.requestAnimationFrame = (cb) => cb();
 
 // -------------------------------------------------------------
 // MAIN TEST RUNNER
 // -------------------------------------------------------------
 async function runAllTests() {
-  console.log('🚀 Starting Netflix Auto Skip Full QA Audit & Dry-Run Suite...\n');
+  console.log('🚀 Starting Netflix Auto Skip Full Production QA Audit...\n');
 
   await describe('1. Master Switch & Individual Feature Toggles', async () => {
     await it('Master Toggle = false: Completely halts scanning & prevents all clicks', async () => {
@@ -252,24 +269,82 @@ async function runAllTests() {
     });
   });
 
-  await describe('2. Player Control Bar Exclusion Guard', async () => {
+  await describe('2. False-Positive Exclusion Guards', async () => {
+    function isIgnoredElement(el) {
+      if (!el) return true;
+      const uia = el.getAttribute('data-uia') || '';
+      if (
+        uia === 'control-next' ||
+        uia === 'control-play-pause' ||
+        uia === 'control-fullscreen-enter' ||
+        uia === 'control-fullscreen-exit' ||
+        uia === 'control-back10' ||
+        uia === 'control-forward10'
+      ) {
+        return true;
+      }
+      if (
+        el.closest(
+          '.watch-video--bottom-controls-container, .PlayerControlsNeo__button-control-row, .PlayerControlsNeo__all-controls, .controls-container, [data-uia="controls-container"]'
+        )
+      ) {
+        return true;
+      }
+      if (
+        el.closest(
+          '.episode-list, .episodes-pane, [data-uia*="episode-list"], [data-uia*="episodes-"], [data-uia="episode-selector"]'
+        )
+      ) {
+        return true;
+      }
+      if (el.closest('.audio-subtitle-controller, [data-uia*="audio-subtitle"]')) {
+        return true;
+      }
+      if (
+        uia.includes('watch-credits') ||
+        uia.includes('postplay-background') ||
+        uia.includes('close') ||
+        uia.includes('back-to-browse')
+      ) {
+        return true;
+      }
+      return false;
+    }
+
     await it('Guards regular playback buttons on bottom control bar from accidental clicks', async () => {
       const controlNextBtn = new MockElement('button', { 'data-uia': 'control-next' });
       const bottomBar = new MockElement('div', { class: 'watch-video--bottom-controls-container' });
       bottomBar.appendChild(controlNextBtn);
 
-      function isPlayerControlBarElement(el) {
-        if (!el) return false;
-        const uia = el.getAttribute('data-uia') || '';
-        if (uia === 'control-next' || uia === 'control-play-pause' || uia === 'control-fullscreen-enter') return true;
-        return !!el.closest('.watch-video--bottom-controls-container');
-      }
+      assert.strictEqual(isIgnoredElement(controlNextBtn), true, 'Control bar button must be flagged as ignored');
+    });
 
-      assert.strictEqual(isPlayerControlBarElement(controlNextBtn), true, 'Control bar button must be flagged');
+    await it('Guards episode selector drawer so user manual browsing is not hijacked', async () => {
+      const drawerItem = new MockElement('button', { 'data-uia': 'episodes-item-2', textContent: 'Episode 2' });
+      const episodeDrawer = new MockElement('div', { class: 'episode-list' });
+      episodeDrawer.appendChild(drawerItem);
+
+      assert.strictEqual(isIgnoredElement(drawerItem), true, 'Episode picker button must be ignored');
+    });
+
+    await it('Guards audio and subtitles menu items from click hijacking', async () => {
+      const audioBtn = new MockElement('button', { 'data-uia': 'audio-subtitle-item-en' });
+      const audioMenu = new MockElement('div', { class: 'audio-subtitle-controller' });
+      audioMenu.appendChild(audioBtn);
+
+      assert.strictEqual(isIgnoredElement(audioBtn), true, 'Audio menu button must be ignored');
+    });
+
+    await it('Guards non-action postplay buttons (e.g. Watch Credits, Back to Browse)', async () => {
+      const watchCreditsBtn = new MockElement('button', { 'data-uia': 'postplay-watch-credits' });
+      const backToBrowseBtn = new MockElement('button', { 'data-uia': 'back-to-browse' });
+
+      assert.strictEqual(isIgnoredElement(watchCreditsBtn), true, 'Watch credits button must be ignored');
+      assert.strictEqual(isIgnoredElement(backToBrowseBtn), true, 'Back to browse button must be ignored');
     });
   });
 
-  await describe('3. Episode Lifecycle State Machine & Single-Click QA', async () => {
+  await describe('3. Episode Lifecycle State Machine, Dedup & Cooldown', async () => {
     await it('Next Episode executes EXACTLY ONCE per episode (Prevents Double-Skips)', async () => {
       const episodeState = {
         currentKey: '80123456',
@@ -283,7 +358,9 @@ async function runAllTests() {
         isActionInProgress = true;
         episodeState.handled[type] = true;
         nextBtn.click();
-        setTimeout(() => { isActionInProgress = false; }, 2000);
+        setTimeout(() => {
+          isActionInProgress = false;
+        }, 2000);
         return true;
       }
 
@@ -296,16 +373,41 @@ async function runAllTests() {
       assert.strictEqual(nextBtn.clickCount, 1, 'Total click count MUST remain 1 (no double skip)');
     });
 
+    await it('Still Watching prompts allow recurring dismissal via cooldown', async () => {
+      const cooldowns = { prompt: 0 };
+      const COOLDOWN_PROMPT = 4000;
+      let promptClickCount = 0;
+
+      function executePrompt(now) {
+        if (now - cooldowns.prompt < COOLDOWN_PROMPT) return false;
+        cooldowns.prompt = now;
+        promptClickCount++;
+        return true;
+      }
+
+      // First prompt at t=5000 (after initial 0)
+      assert.strictEqual(executePrompt(5000), true, 'First prompt dismissed');
+      assert.strictEqual(promptClickCount, 1);
+
+      // Immediate second prompt at t=6000 (within cooldown) -> rejected
+      assert.strictEqual(executePrompt(6000), false, 'Immediate duplicate rejected by cooldown');
+      assert.strictEqual(promptClickCount, 1);
+
+      // Subsequent prompt hours later at t=15000 -> accepted and dismissed
+      assert.strictEqual(executePrompt(15000), true, 'Subsequent prompt after cooldown dismissed');
+      assert.strictEqual(promptClickCount, 2);
+    });
+
     await it('SPA navigation (/watch/801 -> /watch/802) resets per-episode state cleanly', async () => {
       const episodeState = {
         currentKey: '801',
-        handled: { intro: true, recap: true, credits: true, prompt: true }
+        handled: { intro: true, recap: true, credits: true }
       };
 
       function handleEpisodeChange(newId) {
         if (newId !== episodeState.currentKey) {
           episodeState.currentKey = newId;
-          episodeState.handled = { intro: false, recap: false, credits: false, prompt: false };
+          episodeState.handled = { intro: false, recap: false, credits: false };
         }
       }
 
@@ -316,10 +418,56 @@ async function runAllTests() {
     });
   });
 
-  await describe('4. Storage Synchronization & Live Stats Persistence', async () => {
-    await it('incrementStat writes atomically to local and sync storage', async () => {
+  await describe('4. Video Progress State & Boundary Checks', async () => {
+    function getVideoState(video) {
+      if (!video || !video.duration || isNaN(video.duration) || video.duration <= 0) {
+        return { isValid: false, currentTime: 0, duration: 0, progress: 0, isAtStart: false, isNearEnd: false };
+      }
+      const currentTime = video.currentTime || 0;
+      const duration = video.duration || 0;
+      const progress = currentTime / duration;
+      const remaining = duration - currentTime;
+      return {
+        isValid: true,
+        currentTime,
+        duration,
+        progress,
+        isAtStart: currentTime < 45,
+        isNearEnd: currentTime > 45 && (progress >= 0.75 || remaining <= 150)
+      };
+    }
+
+    await it('Safely handles missing video or NaN duration', async () => {
+      const invalidState = getVideoState(null);
+      assert.strictEqual(invalidState.isValid, false);
+      assert.strictEqual(invalidState.isAtStart, false);
+      assert.strictEqual(invalidState.isNearEnd, false);
+
+      const nanVideo = { currentTime: 0, duration: NaN };
+      const nanState = getVideoState(nanVideo);
+      assert.strictEqual(nanState.isValid, false);
+    });
+
+    await it('Correctly flags episode start (< 45s) to guard premature credits skip', async () => {
+      const startVideo = { currentTime: 15, duration: 1800 };
+      const state = getVideoState(startVideo);
+      assert.strictEqual(state.isValid, true);
+      assert.strictEqual(state.isAtStart, true);
+      assert.strictEqual(state.isNearEnd, false);
+    });
+
+    await it('Correctly flags near end (> 75% progress or < 150s remaining)', async () => {
+      const endVideo = { currentTime: 1700, duration: 1800 };
+      const state = getVideoState(endVideo);
+      assert.strictEqual(state.isValid, true);
+      assert.strictEqual(state.isAtStart, false);
+      assert.strictEqual(state.isNearEnd, true);
+    });
+  });
+
+  await describe('5. Storage Architecture & Isolation', async () => {
+    await it('incrementStat writes strictly and atomically to chrome.storage.local', async () => {
       mockLocalStorage.clear();
-      mockSyncStorage.clear();
 
       async function incrementStat(skipType) {
         const current = await mockLocalStorage.get({
@@ -341,28 +489,32 @@ async function runAllTests() {
         stats.totalSkipped += 1;
         if (skipType === 'intro') stats.introsSkipped += 1;
         else if (skipType === 'credits') stats.creditsSkipped += 1;
+        else if (skipType === 'prompt') stats.promptsDismissed += 1;
 
         await mockLocalStorage.set(stats);
-        await mockSyncStorage.set(stats);
       }
 
       await incrementStat('intro');
       await incrementStat('credits');
+      await incrementStat('prompt');
 
       const localData = await mockLocalStorage.get(null);
-      const syncData = await mockSyncStorage.get(null);
-
       assert.strictEqual(localData.introsSkipped, 1, 'Local intros count must be 1');
       assert.strictEqual(localData.creditsSkipped, 1, 'Local credits count must be 1');
-      assert.strictEqual(localData.totalSkipped, 2, 'Local total count must be 2');
-      assert.strictEqual(syncData.totalSkipped, 2, 'Sync total count must be 2');
+      assert.strictEqual(localData.promptsDismissed, 1, 'Local prompts count must be 1');
+      assert.strictEqual(localData.totalSkipped, 3, 'Local total count must be 3');
     });
 
-    await it('Reset stats resets all counters back to 0 cleanly', async () => {
-      const DEFAULT_STATS = { introsSkipped: 0, recapsSkipped: 0, creditsSkipped: 0, promptsDismissed: 0, totalSkipped: 0 };
-      await mockLocalStorage.set({ totalSkipped: 99, introsSkipped: 50 });
+    await it('Reset stats resets all counters back to 0 cleanly in local storage', async () => {
+      const DEFAULT_STATS = {
+        introsSkipped: 0,
+        recapsSkipped: 0,
+        creditsSkipped: 0,
+        promptsDismissed: 0,
+        totalSkipped: 0
+      };
+      await mockLocalStorage.set({ totalSkipped: 120, introsSkipped: 80 });
       await mockLocalStorage.set(DEFAULT_STATS);
-      await mockSyncStorage.set(DEFAULT_STATS);
 
       const localData = await mockLocalStorage.get(null);
       assert.strictEqual(localData.totalSkipped, 0, 'Total skipped must be 0 after reset');
@@ -370,12 +522,44 @@ async function runAllTests() {
     });
   });
 
-  await describe('5. Zombie Process & Context Invalidation Auto-Cleanup', async () => {
+  await describe('6. Multi-Language (i18n) Text Matching Heuristics', async () => {
+    const TEXT_PATTERNS = {
+      intro: /skip\s*intro|ข้ามบทนำ|ข้ามตอนต้น|passer\s*l'intro|intro\s*überspringen|omitir\s*intro|인트로\s*건너뛰기|イントロをスキップ/i,
+      recap: /skip\s*recap|ข้ามบทสรุป|ข้ามสรุป|passer\s*le\s*résumé|rückblick\s*überspringen|omitir\s*resumen|요약\s*건너뛰기/i,
+      credits: /next\s*episode|play\s*next|ตอนถัดไป|เล่นตอนต่อไป|épisode\s*suivant|nächste\s*folge|siguiente\s*episodio|다음\s*화/i,
+      prompt: /continue\s*watching|continue\s*playing|ดูต่อ|ยืนยันดูต่อ|continuer\s*la\s*lecture|weiterschauen|continuar\s*viendo|계속\s*시청/i
+    };
+
+    await it('Accurately matches intro phrases across languages', async () => {
+      assert.strictEqual(TEXT_PATTERNS.intro.test('Skip Intro'), true);
+      assert.strictEqual(TEXT_PATTERNS.intro.test('ข้ามบทนำ'), true);
+      assert.strictEqual(TEXT_PATTERNS.intro.test("Passer l'intro"), true);
+      assert.strictEqual(TEXT_PATTERNS.intro.test('Intro überspringen'), true);
+      assert.strictEqual(TEXT_PATTERNS.intro.test('Omitir intro'), true);
+      assert.strictEqual(TEXT_PATTERNS.intro.test('인트로 건너뛰기'), true);
+      assert.strictEqual(TEXT_PATTERNS.intro.test('イントロをスキップ'), true);
+    });
+
+    await it('Accurately matches next episode phrases across languages', async () => {
+      assert.strictEqual(TEXT_PATTERNS.credits.test('Next Episode'), true);
+      assert.strictEqual(TEXT_PATTERNS.credits.test('ตอนถัดไป'), true);
+      assert.strictEqual(TEXT_PATTERNS.credits.test('Épisode suivant'), true);
+      assert.strictEqual(TEXT_PATTERNS.credits.test('Nächste Folge'), true);
+      assert.strictEqual(TEXT_PATTERNS.credits.test('Siguiente episodio'), true);
+      assert.strictEqual(TEXT_PATTERNS.credits.test('다음 화'), true);
+    });
+  });
+
+  await describe('7. Context Invalidation & Zombie Process Cleanup', async () => {
     await it('Terminates observers and polling intervals upon context invalidation', async () => {
       let observerDisconnected = false;
       let intervalCleared = false;
 
-      let observer = { disconnect: () => { observerDisconnected = true; } };
+      let observer = {
+        disconnect: () => {
+          observerDisconnected = true;
+        }
+      };
       let pollInterval = 999;
 
       function cleanup() {
@@ -398,7 +582,7 @@ async function runAllTests() {
   });
 
   console.log('\n=============================================================');
-  console.log(`📊 QA AUDIT & DRY-RUN SUMMARY: ${passedTests}/${totalTests} TESTS PASSED (0 FAILS)`);
+  console.log(`📊 QA AUDIT & TEST SUMMARY: ${passedTests}/${totalTests} TESTS PASSED (${failedTests} FAILS)`);
   console.log('=============================================================\n');
 
   if (failedTests > 0) {
@@ -407,3 +591,4 @@ async function runAllTests() {
 }
 
 runAllTests();
+
