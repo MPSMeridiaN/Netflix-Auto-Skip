@@ -55,7 +55,8 @@ const requiredFiles = [
   'scripts/prepare-release.js',
   'scripts/release-notes.js',
   '.github/workflows/ci.yml',
-  '.github/workflows/release.yml'
+  '.github/workflows/release.yml',
+  '.github/dependabot.yml'
 ];
 for (const relativePath of requiredFiles) {
   assert.ok(fs.existsSync(path.join(root, relativePath)), `Missing required release file: ${relativePath}`);
@@ -69,6 +70,7 @@ const popup = readText('popup/popup.html');
 const engine = readText('content/engine.js');
 const serviceWorker = readText('background/service-worker.js');
 const releaseWorkflow = readText('.github/workflows/release.yml');
+const dependabot = readText('.github/dependabot.yml');
 
 assert.ok(readme.includes(`netflix-auto-skip-v${version}.zip`), 'README release link must use the current version');
 assert.ok(changelog.includes(`## [${version}]`), 'CHANGELOG must contain the current version section');
@@ -83,6 +85,8 @@ assert.ok(serviceWorker.includes("importScripts('../shared/constants.js', '../sh
 assert.ok(releaseWorkflow.includes("tags:\n      - 'v*.*.*'"), 'Release workflow must be tag-driven');
 assert.ok(releaseWorkflow.includes('npm run build'), 'Release workflow must run the complete build');
 assert.ok(releaseWorkflow.includes('scripts/release-notes.js'), 'Release workflow must use changelog-backed notes');
+assert.ok(dependabot.includes('groups:'), 'Dependabot updates must be grouped');
+assert.ok(dependabot.includes('github-actions:'), 'Dependabot must group GitHub Actions updates');
 
 for (const [label, text] of [
   ['README', readme],
