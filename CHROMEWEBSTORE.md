@@ -8,7 +8,7 @@ This document contains the official metadata, permissions justifications, and pr
 
 - **Extension Name**: Netflix Auto Skip - Intro, Recap & Credits
 - **Short Name**: Netflix Auto Skip
-- **Version**: 1.1.1
+- **Version**: 1.1.2
 - **Category**: Productivity / Accessibility
 - **Primary Language**: English
 - **Summary**: Automatically skips intros, recaps, and credits, autoplays next episodes, and dismisses "Still watching" on Netflix.
@@ -62,6 +62,8 @@ Simple, reliable, and invisible. Install it, sit back, and enjoy your show.
 ---
 
 ## Version History
+
+- **1.1.2** (2026-08-31): Fixed Skip Intro detection at episode start, stale video-progress blocking during transitions, and DOM re-render races.
 
 - **1.1.1** (2026-08-31): Final production hardening: production-code DOM fixtures, owned lifecycle teardown, stable route identity, stricter playback scoping, storage fallback migration, deterministic release packaging, and release audits.
 - **1.1.0** (2026-08-31): Production hardening, refined DOM selector safety, false-positive protection for control bars and episode drawers, route-scoped performance optimization, single-source storage management, and comprehensive automated test suite.

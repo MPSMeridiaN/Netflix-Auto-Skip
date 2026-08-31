@@ -653,6 +653,43 @@ async function runAllTests() {
         controller.stop();
       }
     });
+
+    await it('Clicks an explicit Skip Intro that is already visible at the exact start of an episode', async () => {
+      await withController('/watch/801', async (env, controller) => {
+        const { player } = addPlayback(env, 0);
+        const intro = addButton(env, player, { 'data-uia': 'player-skip-intro' });
+        await controller.start();
+        assert.strictEqual(intro.clickCount, 1);
+      });
+    });
+
+    await it('Reacquires an intro button replaced while the local stats write is pending', async () => {
+      const env = createEnv('/watch/801');
+      let resolveStats;
+      const controller = makeController(env, {
+        storage: {
+          getSettings: async () => ({ ...require('../shared/constants.js').DEFAULT_SETTINGS }),
+          incrementStat: () => new Promise((resolve) => {
+            resolveStats = resolve;
+          })
+        }
+      });
+      try {
+        const { player } = addPlayback(env, 0);
+        await controller.start();
+        const original = addButton(env, player, { 'data-uia': 'player-skip-intro' });
+        const action = controller.scanAndSkip();
+        await new Promise((resolve) => setImmediate(resolve));
+        original.remove();
+        const replacement = addButton(env, player, { 'data-uia': 'player-skip-intro' });
+        resolveStats(true);
+        assert.strictEqual(await action, true);
+        assert.strictEqual(original.clickCount, 0);
+        assert.strictEqual(replacement.clickCount, 1);
+      } finally {
+        controller.stop();
+      }
+    });
   });
 
   await describe('2. Selector confidence and false-positive protection', async () => {
@@ -728,6 +765,15 @@ async function runAllTests() {
         const button = addButton(env, player, {}, "Passer l'intro");
         assert.strictEqual(controller.findElement('intro'), button);
         assert.strictEqual(TEXT_PATTERNS.intro.test(button.textContent), true);
+      });
+    });
+
+    await it('Trusts an explicit Skip Intro selector while a reused video reports stale late-episode progress', async () => {
+      await withController('/watch/801', async (env, controller) => {
+        const { player } = addPlayback(env, 1700);
+        const intro = addButton(env, player, { 'data-uia': 'player-skip-intro' });
+        await controller.start();
+        assert.strictEqual(intro.clickCount, 1);
       });
     });
 

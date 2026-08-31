@@ -10,7 +10,7 @@ const path = require('path');
 const assert = require('assert');
 
 const root = path.resolve(__dirname, '..');
-const readText = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
+const readText = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8').replace(/\r\n/g, '\n');
 const readJson = (relativePath) => JSON.parse(readText(relativePath));
 
 const packageJson = readJson('package.json');

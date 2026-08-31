@@ -1,6 +1,6 @@
 {
   "name": "netflix-auto-skip",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Clean, privacy-focused open-source browser extension to automate Netflix playback interactions.",
   "main": "background/service-worker.js",
   "scripts": {

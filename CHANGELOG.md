@@ -13,6 +13,19 @@ _Changes for the next release go here. Run `npm run release:prepare -- <version>
 
 ---
 
+## [1.1.2] - 2026-08-31
+
+### Added
+
+### Changed
+- **Start-of-Episode Reliability**: Revalidated explicit Netflix intro/recap selectors before generic text matching, even when a reused video element briefly reports the previous episode's progress.
+- **DOM Re-render Recovery**: Reacquired the current action button after local statistics persistence so Netflix can replace the overlay without losing the skip.
+
+### Fixed
+- **Skip Intro at Episode Start**: Fixed visible Skip Intro controls being ignored during episode transitions and at the exact start of playback.
+- **Stale Button Race**: Added a route-safe retry when Netflix re-renders a Skip Intro control while the pre-click local counter write is pending.
+
+
 ## [1.1.1] - 2026-08-31
 
 ### Changed
@@ -129,7 +142,7 @@ _Changes for the next release go here. Run `npm run release:prepare -- <version>
 
 ---
 
-[unreleased]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.1...HEAD
+[unreleased]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.2...HEAD
 [1.1.1]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.7...v1.1.0
 [1.0.7]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.6...v1.0.7
@@ -140,3 +153,4 @@ _Changes for the next release go here. Run `npm run release:prepare -- <version>
 [1.0.2]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases/tag/v1.0.0
+[1.1.2]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.1...v1.1.2

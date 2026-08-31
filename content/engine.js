@@ -614,13 +614,13 @@
       ].filter(Boolean).join(' ');
     }
 
-    function findElement(type) {
-      if (!ACTION_TYPES.includes(type) || actionInProgress || !isPlaybackContext()) return null;
-      if (type !== 'prompt' && episodeState.handled[type]) return null;
+    function findElement(type, options = {}) {
+      const allowActionRetry = options.allowActionRetry === true;
+      if (!ACTION_TYPES.includes(type) || (!allowActionRetry && actionInProgress) || !isPlaybackContext()) return null;
+      if (!allowActionRetry && type !== 'prompt' && episodeState.handled[type]) return null;
 
       const videoState = getVideoState();
       if (type === 'credits' && videoState.isValid && videoState.isAtStart) return null;
-      if ((type === 'intro' || type === 'recap') && videoState.isValid && videoState.progress > 0.60) return null;
 
       // Explicit Netflix selectors are the high-confidence path.
       for (const selector of SELECTORS[type]) {
@@ -628,6 +628,12 @@
           if (isCandidateAllowed(type, element, videoState, false)) return element;
         }
       }
+
+      // A reused video element can briefly report the previous episode's
+      // late-playback position while Netflix is already showing the new
+      // episode's explicit intro/recap control. Only generic text matching
+      // needs the progress guard; explicit Netflix selectors are authoritative.
+      if ((type === 'intro' || type === 'recap') && videoState.isValid && videoState.progress > 0.60) return null;
 
       // Text matching is deliberately last-resort and requires a contextual
       // container in addition to route, player, visibility, and progress checks.
@@ -784,6 +790,7 @@
       cooldowns[type] = timestamp;
 
       let clicked = false;
+      let retryNeeded = false;
       try {
         // Persist before the native click so navigation cannot discard the
         // counter write. The action lock prevents another scan meanwhile.
@@ -802,11 +809,23 @@
           return false;
         }
 
+        // Netflix may replace the button while the local stats write is in
+        // flight. Re-query inside the same route/episode instead of clicking
+        // a detached node or abandoning the visible replacement.
+        const currentTarget = findElement(type, { allowActionRetry: true });
+        if (!currentTarget) {
+          retryNeeded = true;
+          return false;
+        }
+
         const currentVideoState = getVideoState();
-        if (!isCandidateAllowed(type, target, currentVideoState, false)) return false;
+        if (!isCandidateAllowed(type, currentTarget, currentVideoState, false)) {
+          retryNeeded = true;
+          return false;
+        }
 
         showToastHUD(title, subtitle, TOAST_ICONS[type]);
-        clicked = performAtomicClick(target);
+        clicked = performAtomicClick(currentTarget);
         return clicked;
       } finally {
         if (!clicked) {
@@ -815,6 +834,7 @@
             cooldowns[type] = null;
           }
           cancelActionLock();
+          if (retryNeeded && !stopped && isCurrentInstance() && isPlaybackContext()) scheduleScan();
         } else if (episodeState.currentKey === actionKey && lifecycleToken === actionLifecycle && !stopped) {
           actionTimer = setOwnedTimeout(() => {
             actionInProgress = false;
