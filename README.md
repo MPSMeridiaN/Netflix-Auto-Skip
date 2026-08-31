@@ -6,8 +6,8 @@
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-E50914.svg?style=flat-square&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F5A623.svg?style=flat-square)](LICENSE)
-[![Chromium Compatible](https://img.shields.io/badge/Universal-Chromium%20Browsers-30D158.svg?style=flat-square)](#-browser-compatibility)
-[![Privacy: 100% Local](https://img.shields.io/badge/Privacy-100%25%20Offline-0A84FF.svg?style=flat-square)](#-privacy--security)
+[![Chromium MV3](https://img.shields.io/badge/Target-Chromium%20MV3-30D158.svg?style=flat-square)](#-browser-compatibility)
+[![Privacy: No Telemetry](https://img.shields.io/badge/Privacy-No%20Telemetry-0A84FF.svg?style=flat-square)](#-privacy--security)
 
 <br/>
 
@@ -29,13 +29,13 @@
 - **Auto-Confirm "Still Watching"** — Dismisses playback pause prompts during binge sessions.
 - **On-Screen HUD Toast** — Sleek, subtle floating indicator when an action occurs (optional).
 - **Customizable Toggles** — Turn individual automation features on or off anytime via the popup.
-- **Local Stats Counter** — Tracks your total skips and time saved directly on your machine.
+- **Local Skip Counters** — Tracks skip counts directly on your machine.
 
 ---
 
 ## 🚀 Quick Install (3 Steps)
 
-1. **Download Release**: Grab [`netflix-auto-skip-v1.1.0.zip`](dist/netflix-auto-skip-v1.1.0.zip) from the [`dist/`](dist/) folder or [GitHub Releases](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases).
+1. **Download Release**: Grab [`netflix-auto-skip-v1.1.1.zip`](dist/netflix-auto-skip-v1.1.1.zip) from the [`dist/`](dist/) folder or [GitHub Releases](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases).
 2. **Extract ZIP**: Extract the archive to a folder on your computer.
 3. **Load Extension**:
    - Open your browser's extension page (e.g. `chrome://extensions` or `vivaldi://extensions`).
@@ -48,7 +48,7 @@
 
 ## 🌐 Browser Compatibility
 
-Works with all modern Chromium-based desktop browsers:
+Designed for Chromium-based desktop browsers with Manifest V3 support. Netflix DOM changes can affect selector compatibility:
 
 | Browser | Support | Installation Path |
 | :--- | :---: | :--- |
@@ -73,8 +73,8 @@ graph LR
 ```
 
 - **Targeted Selectors**: Matches verified Netflix skip buttons while explicitly excluding player controls, audio/subtitle menus, and episode drawers.
-- **Episode State Machine**: Tracks episode transitions so each skip action runs at most once per episode.
-- **Low Overhead**: Scoped to active playback views (`/watch/*`) and throttled with `requestAnimationFrame`.
+- **Episode State Machine**: Uses the canonical watch-route identity, so transient title DOM changes do not reset one-shot actions.
+- **Low Overhead**: The playback observer and 1-second fallback poll exist only while a recognized player-root video is active; mutation scans are batched with `requestAnimationFrame`.
 
 *For detailed architectural specifications, state machine transitions, and design diagrams, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).*
 
@@ -82,16 +82,15 @@ graph LR
 
 ## 🔒 Privacy & Security
 
-- **100% Offline**: Zero external network requests, zero telemetry, and zero analytics.
-- **Scoped Permission**: Operates strictly on `*://*.netflix.com/*`.
+- **No telemetry or network backend**: No telemetry, analytics, remote backend, or extension-initiated external network requests.
+- **Scoped Permission**: Operates only on `https://www.netflix.com/*` and requests the `storage` permission.
 - **Transparent Storage**:
   - User toggle settings sync across your own logged-in browser profile via `chrome.storage.sync` (with local fallback).
   - Skip counts stay strictly on your local device in `chrome.storage.local`.
-- **No Account Access**: The extension cannot read your passwords, cookies, or payment details.
+- **Playback-only behavior**: The content script inspects the Netflix playback-page DOM for supported controls. It does not intentionally collect or transmit credentials, cookies, payment details, or account data.
 
 ---
 
 ## 📄 License
 
 Distributed under the [MIT License](LICENSE).
-

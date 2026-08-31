@@ -8,7 +8,7 @@ This document contains the official metadata, permissions justifications, and pr
 
 - **Extension Name**: Netflix Auto Skip - Intro, Recap & Credits
 - **Short Name**: Netflix Auto Skip
-- **Version**: 1.1.0
+- **Version**: 1.1.1
 - **Category**: Productivity / Accessibility
 - **Primary Language**: English
 - **Summary**: Automatically skips intros, recaps, and credits, autoplays next episodes, and dismisses "Still watching" on Netflix.
@@ -27,12 +27,13 @@ KEY FEATURES:
 • Auto-Confirm "Still Watching": Dismisses periodic pause interruption dialogs.
 • On-Screen Toast HUD: Sleek, non-intrusive floating indicator when a skip occurs (can be toggled off).
 • Individual Feature Controls: Customize exactly which features are active in the popup menu.
-• Local Analytics: View your total skip statistics directly in the popup dashboard.
+• Local Skip Counters: View your skip statistics directly in the popup dashboard.
 
 PRIVACY & SAFETY FIRST:
-• 100% Offline: Operates entirely within your browser.
-• Zero Data Collection: No tracking, no analytics, no external servers, and no cookies collected.
-• Scoped Permissions: Runs strictly on netflix.com.
+• No telemetry or network backend: No telemetry, analytics, remote backend, or extension-initiated external network requests.
+• Playback-only data handling: The extension does not intentionally collect or transmit credentials, cookies, payment details, or account data.
+• Scoped Permissions: Injects only on https://www.netflix.com/* and requests the storage permission.
+• Storage is transparent: settings may sync through the browser profile, while skip counters remain in local browser storage.
 
 Simple, reliable, and invisible. Install it, sit back, and enjoy your show.
 ```
@@ -44,8 +45,8 @@ Simple, reliable, and invisible. Install it, sit back, and enjoy your show.
 ### 1. `storage`
 - **Justification**: Required to persist user automation preferences (e.g., enable/disable intro skip, toggle HUD overlay) and store local skip statistics on the user's device.
 
-### 2. Host Permission: `*://*.netflix.com/*`
-- **Justification**: Required to inject the content script into the Netflix video player to detect and click skip buttons during playback. The extension has no access to any other websites.
+### 2. Host Permission: `https://www.netflix.com/*`
+- **Justification**: Required to inject the content script into the Netflix video player to detect and click supported controls during playback. No other origins are included.
 
 ---
 
@@ -53,15 +54,16 @@ Simple, reliable, and invisible. Install it, sit back, and enjoy your show.
 
 | Question | Answer | Details |
 | :--- | :---: | :--- |
-| **Do you collect personal data?** | **No** | The extension collects zero personal identifiable information. |
-| **Do you transmit data to external servers?** | **No** | Zero external network calls or telemetry endpoints. |
-| **How are user settings stored?** | **Local / Sync** | Stored in `chrome.storage.sync` (or `local` fallback) within the user's own browser profile. |
-| **How are statistics stored?** | **Local Only** | Kept strictly on the user's device in `chrome.storage.local`. |
+| **Do you collect personal data?** | **No** | No credentials, cookies, payment details, or account data are intentionally collected or transmitted. |
+| **Do you transmit data to external servers?** | **No** | No telemetry, analytics, remote backend, or extension-initiated external network requests. |
+| **How are user settings stored?** | **Local / Sync** | Stored in `chrome.storage.sync` when available, with a local fallback in the user's browser profile. |
+| **How are statistics stored?** | **Local Only** | Skip counters are written strictly to `chrome.storage.local`. |
 
 ---
 
 ## Version History
 
+- **1.1.1** (2026-08-31): Final production hardening: production-code DOM fixtures, owned lifecycle teardown, stable route identity, stricter playback scoping, storage fallback migration, deterministic release packaging, and release audits.
 - **1.1.0** (2026-08-31): Production hardening, refined DOM selector safety, false-positive protection for control bars and episode drawers, route-scoped performance optimization, single-source storage management, and comprehensive automated test suite.
 - **1.0.7** (2026-08-30): Seamless credit countdown bypass selector expansion.
 - **1.0.0** (2026-08-30): Initial public release with intro, recap, credits, and still watching auto-skipping.

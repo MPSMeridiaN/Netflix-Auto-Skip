@@ -1,14 +1,16 @@
 {
   "name": "netflix-auto-skip",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Clean, privacy-focused open-source browser extension to automate Netflix playback interactions.",
   "main": "background/service-worker.js",
   "scripts": {
     "build:icons": "python scripts/generate-icons.py",
     "build:zip": "python scripts/build-zip.py",
-    "build": "npm run validate && npm run test && npm run build:zip",
-    "validate": "node -c background/service-worker.js && node -c content/content.js && node -c popup/popup.js",
-    "test": "node scripts/qa-dryrun-test.js"
+    "validate": "node -c shared/constants.js && node -c shared/storage.js && node -c background/service-worker.js && node -c content/engine.js && node -c content/content.js && node -c popup/popup.js",
+    "test": "node scripts/qa-dryrun-test.js",
+    "audit:release": "node scripts/release-audit.js",
+    "audit:artifact": "python scripts/build-zip.py --check",
+    "build": "npm run validate && npm test && npm run audit:release && npm run build:zip && npm run audit:artifact"
   },
   "keywords": [
     "netflix",

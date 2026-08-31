@@ -20,7 +20,7 @@
         <div class="brand-info">
           <div class="brand-title-row">
             <h1 class="brand-title">Netflix Auto Skip</h1>
-            <span class="pro-badge">v1.1.0</span>
+            <span class="pro-badge">v1.1.1</span>
           </div>
           <p class="brand-tagline">Seamless Playback Automation</p>
         </div>
@@ -41,7 +41,7 @@
       </div>
       <div class="status-details">
         <span id="status-text" class="status-text">Active & Monitoring Netflix</span>
-        <span class="status-sub">Zero-latency observer running</span>
+        <span class="status-sub">Runs only during Netflix playback</span>
       </div>
     </div>
 
@@ -54,7 +54,7 @@
             <path d="M18 20V4"></path>
             <path d="M6 20v-4"></path>
           </svg>
-          <h2>Time Saved & Analytics</h2>
+          <h2>Local Skip Counters</h2>
         </div>
         <button id="btn-reset-stats" class="btn-refresh" title="Reset all counters">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -183,11 +183,13 @@
     <footer class="app-footer">
       <div class="footer-badge">
         <span class="shield-icon">🛡️</span>
-        <span>100% Private & Open Source</span>
+        <span>No telemetry · Open Source</span>
       </div>
     </footer>
   </div>
 
+  <script src="../shared/constants.js"></script>
+  <script src="../shared/storage.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

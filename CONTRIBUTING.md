@@ -12,7 +12,7 @@ Please be respectful, constructive, and helpful when participating in issues, pu
 Netflix regularly updates its web player interface, which may change element class names or `data-uia` attributes. If an auto-skip feature stops working:
 - Open a GitHub Issue.
 - Include your Browser & Version (e.g., Vivaldi 6.x, Chrome 120+, Edge, Brave).
-- Include Netflix video URL or title where the issue happened.
+- Include the affected Netflix route or title only after removing account identifiers; do not share credentials, cookies, payment details, or private account data.
 - If possible, inspect the button element in DevTools and copy its HTML/selectors.
 
 ### 2. Developing Locally

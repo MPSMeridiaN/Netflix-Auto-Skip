@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Netflix Auto Skip - Intro, Recap & Credits",
   "short_name": "Netflix Auto Skip",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Automatically skips Netflix intros, recaps, and credits, autoplays next episodes, and dismisses 'Are you still watching?'.",
   "author": "MPSMeridiaN",
   "homepage_url": "https://github.com/MPSMeridiaN/Netflix-Auto-Skip",
@@ -16,7 +16,7 @@
     "storage"
   ],
   "host_permissions": [
-    "*://*.netflix.com/*"
+    "https://www.netflix.com/*"
   ],
   "action": {
     "default_popup": "popup/popup.html",
@@ -34,9 +34,12 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.netflix.com/*"
+        "https://www.netflix.com/*"
       ],
       "js": [
+        "shared/constants.js",
+        "shared/storage.js",
+        "content/engine.js",
         "content/content.js"
       ],
       "css": [

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.1] - 2026-08-31
+
+### Changed
+- **Production-Code QA**: Replaced copied-logic tests with DOM-fixture tests that call the production playback engine.
+- **Lifecycle Ownership**: Added singleton instance replacement, history-wrapper restoration, listener cleanup, media hook cleanup, and owned timer/frame teardown.
+- **Playback Scoping**: Restricted execution to exact Netflix watch routes with a recognized player-root video; catalog and unrecognized preview videos are ignored.
+- **Episode Identity**: Switched one-shot state to canonical watch-route identity so transient title DOM changes do not reset episode state.
+- **Storage Contract**: Centralized settings/statistics behavior, serialized local counter increments, and added migration for settings written during sync fallback.
+- **Release Verification**: Added static release audits and deterministic ZIP metadata/content verification.
+
+### Fixed
+- Prevented history `pushState`/`replaceState` wrapper stacking after repeated injection or extension reload.
+- Prevented stale in-flight actions from clicking DOM belonging to a later SPA route.
+- Replaced absolute privacy wording with behavior-based network, storage, and data-handling disclosures.
+
+---
+
 ## [1.1.0] - 2026-08-31
 
 ### Added
