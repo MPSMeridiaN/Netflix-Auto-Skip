@@ -49,21 +49,30 @@ const requiredFiles = [
   'icons/icon-128.png',
   'README.md',
   'CHANGELOG.md',
+  'SECURITY.md',
   'docs/ARCHITECTURE.md',
-  'LICENSE'
+  'LICENSE',
+  'scripts/prepare-release.js',
+  'scripts/release-notes.js',
+  '.github/workflows/ci.yml',
+  '.github/workflows/release.yml'
 ];
 for (const relativePath of requiredFiles) {
   assert.ok(fs.existsSync(path.join(root, relativePath)), `Missing required release file: ${relativePath}`);
 }
 
 const readme = readText('README.md');
+const changelog = readText('CHANGELOG.md');
 const storeGuide = readText('CHROMEWEBSTORE.md');
 const architecture = readText('docs/ARCHITECTURE.md');
 const popup = readText('popup/popup.html');
 const engine = readText('content/engine.js');
 const serviceWorker = readText('background/service-worker.js');
+const releaseWorkflow = readText('.github/workflows/release.yml');
 
 assert.ok(readme.includes(`netflix-auto-skip-v${version}.zip`), 'README release link must use the current version');
+assert.ok(changelog.includes(`## [${version}]`), 'CHANGELOG must contain the current version section');
+assert.ok(changelog.includes('## [Unreleased]'), 'CHANGELOG must keep an Unreleased section');
 assert.ok(storeGuide.includes(`- **Version**: ${version}`), 'Store guide version must match the manifest');
 assert.ok(popup.includes(`v${version}`), 'Popup version must match the manifest');
 assert.ok(readme.includes('No telemetry, analytics, remote backend, or extension-initiated external network requests.'));
@@ -71,6 +80,9 @@ assert.ok(storeGuide.includes('No telemetry, analytics, remote backend, or exten
 assert.ok(architecture.includes('canonical route identity'));
 assert.ok(engine.includes('recognized Netflix player context'));
 assert.ok(serviceWorker.includes("importScripts('../shared/constants.js', '../shared/storage.js')"));
+assert.ok(releaseWorkflow.includes("tags:\n      - 'v*.*.*'"), 'Release workflow must be tag-driven');
+assert.ok(releaseWorkflow.includes('npm run build'), 'Release workflow must run the complete build');
+assert.ok(releaseWorkflow.includes('scripts/release-notes.js'), 'Release workflow must use changelog-backed notes');
 
 for (const [label, text] of [
   ['README', readme],

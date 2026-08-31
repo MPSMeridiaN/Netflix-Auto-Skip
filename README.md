@@ -8,6 +8,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-F5A623.svg?style=flat-square)](LICENSE)
 [![Chromium MV3](https://img.shields.io/badge/Target-Chromium%20MV3-30D158.svg?style=flat-square)](#-browser-compatibility)
 [![Privacy: No Telemetry](https://img.shields.io/badge/Privacy-No%20Telemetry-0A84FF.svg?style=flat-square)](#-privacy--security)
+[![CI](https://img.shields.io/github/actions/workflow/status/MPSMeridiaN/Netflix-Auto-Skip/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/actions/workflows/ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/MPSMeridiaN/Netflix-Auto-Skip?display_name=tag&style=flat-square&color=E50914)](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases)
 
 <br/>
 
@@ -77,6 +79,28 @@ graph LR
 - **Low Overhead**: The playback observer and 1-second fallback poll exist only while a recognized player-root video is active; mutation scans are batched with `requestAnimationFrame`.
 
 *For detailed architectural specifications, state machine transitions, and design diagrams, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).*
+
+---
+
+## 🧪 Development & Releases
+
+This repository has no runtime dependencies. Run the complete local verification pipeline with:
+
+```bash
+npm run build
+```
+
+That command validates JavaScript syntax, runs production-code QA, checks release metadata, builds the deterministic ZIP, and verifies its contents.
+
+Releases are tag-driven. To prepare the next version and synchronize the manifest, popup, documentation, and changelog surfaces:
+
+```bash
+npm run release:prepare -- 1.1.2
+```
+
+Review and complete the generated version section in [`CHANGELOG.md`](CHANGELOG.md), then commit and push the matching tag (`v1.1.2`). GitHub Actions verifies the tag, runs the same build pipeline, attaches the ZIP, and publishes the release notes automatically.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for change guidelines and [`SECURITY.md`](SECURITY.md) for private vulnerability reporting.
 
 ---
 

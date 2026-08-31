@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+_Changes for the next release go here. Run `npm run release:prepare -- <version>` to promote this section._
+
+---
+
 ## [1.1.1] - 2026-08-31
 
 ### Changed
@@ -16,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Episode Identity**: Switched one-shot state to canonical watch-route identity so transient title DOM changes do not reset episode state.
 - **Storage Contract**: Centralized settings/statistics behavior, serialized local counter increments, and added migration for settings written during sync fallback.
 - **Release Verification**: Added static release audits and deterministic ZIP metadata/content verification.
+- **Release Automation**: Added tag-driven CI/release workflows, synchronized version preparation, and changelog-backed GitHub release notes.
 
 ### Fixed
 - Prevented history `pushState`/`replaceState` wrapper stacking after repeated injection or extension reload.
@@ -119,3 +126,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Popup Settings & Analytics**: Dark-mode popup dashboard with individual feature toggles and statistics.
 - **Universal Chromium Compatibility**: Full Manifest V3 support for Vivaldi, Chrome, Edge, Brave, Opera, and Arc.
 - **Open Source Foundation**: MIT License and contributing guidelines.
+
+---
+
+[unreleased]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.7...v1.1.0
+[1.0.7]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.6...v1.0.7
+[1.0.6]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.5...v1.0.6
+[1.0.5]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.4...v1.0.5
+[1.0.4]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.3...v1.0.4
+[1.0.3]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases/tag/v1.0.0

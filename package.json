@@ -6,11 +6,13 @@
   "scripts": {
     "build:icons": "python scripts/generate-icons.py",
     "build:zip": "python scripts/build-zip.py",
-    "validate": "node -c shared/constants.js && node -c shared/storage.js && node -c background/service-worker.js && node -c content/engine.js && node -c content/content.js && node -c popup/popup.js",
+    "validate": "node -c shared/constants.js && node -c shared/storage.js && node -c background/service-worker.js && node -c content/engine.js && node -c content/content.js && node -c popup/popup.js && node -c scripts/prepare-release.js && node -c scripts/release-notes.js && node -c scripts/release-audit.js",
     "test": "node scripts/qa-dryrun-test.js",
     "audit:release": "node scripts/release-audit.js",
     "audit:artifact": "python scripts/build-zip.py --check",
-    "build": "npm run validate && npm test && npm run audit:release && npm run build:zip && npm run audit:artifact"
+    "build": "npm run validate && npm test && npm run audit:release && npm run build:zip && npm run audit:artifact",
+    "release:prepare": "node scripts/prepare-release.js",
+    "release:notes": "node scripts/release-notes.js"
   },
   "keywords": [
     "netflix",

@@ -29,5 +29,11 @@ Netflix regularly updates its web player interface, which may change element cla
 - Keep content script DOM checks throttled with `requestAnimationFrame` to prevent any stutter or performance impact on video playback.
 - Write clear, concise commit messages.
 
+### 4. Preparing a Release
+1. Run `npm run release:prepare -- X.Y.Z` to synchronize all version surfaces and promote the `Unreleased` changelog section.
+2. Review the generated version section in `CHANGELOG.md` and run `npm run build`.
+3. Commit the release changes, create the matching tag (`vX.Y.Z`), and push the commit and tag.
+4. The GitHub Actions release workflow validates the tag, rebuilds the ZIP, and publishes the changelog-backed GitHub Release automatically.
+
 ## License
 By contributing, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).
