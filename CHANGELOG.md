@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _Changes for the next release go here. Run `npm run release:prepare -- <version>` to promote this section._
 
+### Fixed
+- **Playback Startup Recovery**: Detects watch-route transitions that bypass the History API and waits for player visibility/class changes during startup, so Skip Intro is handled without reopening the extension.
+- **Bootstrap Startup Race**: Retries the initial engine start briefly when Vivaldi restores a Netflix tab before the extension runtime is ready.
+- **Player Re-render Recovery**: Rebinds playback observers and media listeners when Netflix replaces the player root during autoplay or episode transitions.
+
 ---
 
 ## [1.1.2] - 2026-08-31

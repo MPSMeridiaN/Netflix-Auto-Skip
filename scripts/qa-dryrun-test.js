@@ -934,11 +934,56 @@ async function runAllTests() {
         const intro = addButton(env, player, { 'data-uia': 'player-skip-intro' });
         const activation = MockMutationObserver.instances.find((observer) => observer.root === env.document.body);
         assert.ok(activation, 'route activation observer should watch the document body');
+        assert.strictEqual(activation.options.attributes, true);
+        assert.ok(activation.options.attributeFilter.includes('class'));
+        assert.ok(activation.options.attributeFilter.includes('aria-hidden'));
         activation.trigger();
         assert.strictEqual(controller.getDiagnostics().playbackObserverActive, true);
         assert.strictEqual(controller.getDiagnostics().activationObserverActive, false);
         assert.strictEqual(controller.getDiagnostics().pollingActive, true);
         await controller.scanAndSkip();
+        assert.strictEqual(intro.clickCount, 1);
+      });
+    });
+
+    await it('Recovers when a watch route appears without a History API event', async () => {
+      await withController('/browse', async (env, controller) => {
+        await controller.start();
+        assert.strictEqual(controller.getDiagnostics().routeWatchdogActive, true);
+        assert.strictEqual(controller.getDiagnostics().pollingActive, false);
+
+        env.window.location.pathname = '/watch/801';
+        const { player } = addPlayback(env, 0);
+        const intro = addButton(env, player, { 'data-uia': 'player-skip-intro' });
+        env.timers.runIntervals();
+
+        assert.strictEqual(controller.getDiagnostics().pollingActive, true);
+        env.timers.runAll();
+        await new Promise((resolve) => setImmediate(resolve));
+        assert.strictEqual(intro.clickCount, 1);
+      });
+    });
+
+    await it('Rebinds monitoring when Netflix replaces the player root during playback', async () => {
+      await withController('/watch/801', async (env, controller) => {
+        const first = addPlayback(env, 30);
+        await controller.start();
+        env.timers.runAll();
+
+        const oldObserver = MockMutationObserver.instances.find((observer) => observer.root === first.player);
+        assert.ok(oldObserver, 'initial player should have a mutation observer');
+
+        first.player.remove();
+        const replacement = addPlayback(env, 30);
+        env.timers.runIntervals();
+
+        const newObserver = MockMutationObserver.instances.find((observer) => observer.root === replacement.player);
+        assert.ok(newObserver, 'replacement player should receive a mutation observer');
+        assert.notStrictEqual(newObserver, oldObserver);
+        assert.ok(oldObserver.disconnectCount > 0, 'old player observer should be disconnected');
+
+        const intro = addButton(env, replacement.player, { 'data-uia': 'player-skip-intro' });
+        assert.strictEqual(await controller.scanAndSkip(), true);
         assert.strictEqual(intro.clickCount, 1);
       });
     });

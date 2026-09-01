@@ -19,6 +19,11 @@ background/service-worker.js  Install/update storage initialization
 the QA suite run the same selector, guard, state, and action code against DOM
 fixtures without rebuilding the implementation in tests.
 
+The browser bootstrap retries its initial engine start briefly when a restored
+tab runs before the extension runtime is ready. It does not retry after a
+successful start, so an invalidated extension context cannot create a timer
+loop.
+
 ## Route and playback scope
 
 The engine accepts only an exact `/watch` route (`/watch` or `/watch/<id>`),
@@ -28,10 +33,13 @@ recognized Netflix player context such as `.watch-video` or a player
 preview/autoplay video, is not playback evidence.
 
 While the exact watch route exists but the player has not mounted, a small
-route-gated activation observer waits for the player-root video. It performs
-no selector scan and does not start polling. Once playback evidence exists,
-the engine observes the player root and starts a 1-second fallback poll.
-Mutation work is batched with `requestAnimationFrame`.
+route-gated activation observer waits for the player-root video and watches
+the attributes Netflix uses to reveal/reclassify the player. It performs no
+selector scan and does not start playback polling. A lightweight route
+watchdog also catches URL transitions that bypass the History API. Once
+playback evidence exists, the engine observes the player root and starts a
+1-second fallback poll. Mutation work is batched with
+`requestAnimationFrame`.
 
 ## Selector and guard order
 
@@ -59,9 +67,12 @@ per-episode lock.
 
 `pushState`, `replaceState`, `popstate`, and `hashchange` all enter the same
 navigation handler. Autoplay transitions are also caught by the regular
-mutation/media hooks and fallback poll. A route transition cancels the old
-action lock so the next episode can start immediately, while a lifecycle
-token prevents an in-flight action from clicking stale DOM.
+mutation/media hooks and fallback poll. Each polling tick also verifies that
+the observed player root and video are still the current ones, then rebinds
+stale monitoring automatically after Netflix re-renders the player. A route
+transition cancels the old action lock so the next episode can start
+immediately, while a lifecycle token prevents an in-flight action from
+clicking stale DOM.
 
 ## Ownership and teardown
 
@@ -70,7 +81,7 @@ Each engine instance owns:
 - its singleton window slot and termination event listener;
 - history wrappers, restored only when the wrapper is still the active owner;
 - navigation, storage, DOM-ready, and media event listeners;
-- activation/playback observers and polling interval;
+- route watchdog, activation/playback observers, and polling interval;
 - scheduled animation frames, action-lock timers, and toast timers.
 
 Starting a new instance synchronously stops the previous instance. Stopping

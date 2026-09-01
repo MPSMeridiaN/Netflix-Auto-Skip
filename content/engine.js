@@ -186,6 +186,7 @@
     let playbackRoot = null;
     let activeVideo = null;
     let pollInterval = null;
+    let routeWatchInterval = null;
     let scheduledScan = null;
     let mutationScheduled = false;
     let domReadyListener = null;
@@ -223,6 +224,7 @@
         playbackObserverActive: Boolean(playbackObserver),
         activationObserverActive: Boolean(activationObserver),
         pollingActive: pollInterval !== null,
+        routeWatchdogActive: routeWatchInterval !== null,
         historyPatched: Object.keys(historyWrappers).some((key) => historyApi && historyApi[key] === historyWrappers[key]),
         pendingTimers: ownedTimers.size,
         pendingAnimationFrames: ownedRafs.size
@@ -880,13 +882,26 @@
       return false;
     }
 
+    function runScanSafely() {
+      try {
+        const result = scanAndSkip();
+        if (result && typeof result.catch === 'function') {
+          result.catch((error) => {
+            logger.warn('[Netflix Auto Skip] Scan error:', error);
+          });
+        }
+      } catch (error) {
+        logger.warn('[Netflix Auto Skip] Scan error:', error);
+      }
+    }
+
     function scheduleScan() {
       if (stopped || !isPlaybackContext()) return scheduledScan;
       if (scheduledScan !== null) return scheduledScan;
       scheduledScan = scheduleFrame(() => {
         scheduledScan = null;
         mutationScheduled = false;
-        void scanAndSkip();
+        runScanSafely();
       });
       if (scheduledScan === null) mutationScheduled = false;
       return scheduledScan;
@@ -958,6 +973,45 @@
       activationObserver = null;
     }
 
+    function checkRouteHealth() {
+      if (!isCurrentInstance() || !isContextAlive()) {
+        if (!isContextAlive()) stop('context-invalidated');
+        return;
+      }
+
+      // Netflix normally uses the History API, but a restored Vivaldi tab or
+      // a router update can change the URL without going through our wrapper.
+      // Keep this check lightweight and let it recover the watch lifecycle.
+      const routeKey = getCurrentEpisodeKey();
+      if (routeKey !== episodeState.currentKey) {
+        handleNavigation();
+        return;
+      }
+
+      if (isWatchRoute()) ensurePlaybackMonitoring();
+    }
+
+    function startRouteWatchdog() {
+      if (routeWatchInterval !== null || typeof setIntervalFn !== 'function') return;
+      try {
+        routeWatchInterval = setIntervalFn(checkRouteHealth, 500);
+      } catch {
+        routeWatchInterval = null;
+      }
+    }
+
+    function stopRouteWatchdog() {
+      if (routeWatchInterval === null) return;
+      if (typeof clearIntervalFn === 'function') {
+        try {
+          clearIntervalFn(routeWatchInterval);
+        } catch {
+          // Ignore teardown races.
+        }
+      }
+      routeWatchInterval = null;
+    }
+
     function startActivationObserver() {
       if (activationObserver || !isWatchRoute() || !doc || !MutationObserverClass) return;
       const rootElement = doc.body || doc.documentElement;
@@ -973,7 +1027,9 @@
         });
         activationObserver.observe(rootElement, {
           childList: true,
-          subtree: true
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['class', 'data-uia', 'style', 'aria-hidden', 'hidden']
         });
       } catch {
         activationObserver = null;
@@ -990,6 +1046,10 @@
         ensurePlaybackMonitoring();
         return;
       }
+      // Netflix can replace the whole player root during an episode
+      // transition. Rebind before scheduling the scan so the new root keeps
+      // its mutation observer and media listeners.
+      ensurePlaybackMonitoring();
       if (mutationScheduled || actionInProgress) return;
       mutationScheduled = true;
       scheduleScan();
@@ -1036,11 +1096,12 @@
               if (!isContextAlive()) stop('context-invalidated');
               return;
             }
-            if (!isPlaybackContext()) {
-              ensurePlaybackMonitoring();
-              return;
-            }
-            void scanAndSkip();
+            // The player element is frequently recreated by Netflix during
+            // autoplay and route transitions. A polling tick is also a cheap
+            // health check that repairs a stale root/video binding.
+            ensurePlaybackMonitoring();
+            if (!isPlaybackContext()) return;
+            runScanSafely();
           }, 1000);
         } catch {
           pollInterval = null;
@@ -1065,7 +1126,18 @@
         return;
       }
 
-      startPlaybackMonitoring();
+      const video = findActiveVideo();
+      const rootElement = video && getObservationRoot(video);
+      const needsRebind = Boolean(
+        video && (
+          activeVideo !== video ||
+          playbackRoot !== rootElement ||
+          (MutationObserverClass && !playbackObserver) ||
+          pollInterval === null
+        )
+      );
+
+      if (needsRebind) startPlaybackMonitoring();
     }
 
     async function refreshSettings() {
@@ -1177,7 +1249,13 @@
       if (stopped || !isCurrentInstance()) return;
       updateEpisodeIdentity();
       ensurePlaybackMonitoring();
-      if (isPlaybackContext()) await scanAndSkip();
+      if (isPlaybackContext()) {
+        try {
+          await scanAndSkip();
+        } catch (error) {
+          logger.warn('[Netflix Auto Skip] Initial scan error:', error);
+        }
+      }
     }
 
     async function start() {
@@ -1207,6 +1285,7 @@
       installNavigationListeners();
       installHistoryHooks();
       installStorageListener();
+      startRouteWatchdog();
 
       if (doc && doc.readyState === 'loading' && typeof doc.addEventListener === 'function') {
         domReadyListener = () => {
@@ -1248,6 +1327,7 @@
 
       stopPlaybackMonitoring();
       stopActivationObserver();
+      stopRouteWatchdog();
       cancelActionLock();
       clearOwnedTimers();
       clearOwnedRafs();
