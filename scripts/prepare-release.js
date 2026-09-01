@@ -1,6 +1,6 @@
 /**
  * Synchronize release version surfaces and promote CHANGELOG.md's Unreleased section.
- * Usage: node scripts/prepare-release.js 1.1.2 [YYYY-MM-DD]
+ * Usage: node scripts/prepare-release.js X.Y.Z [YYYY-MM-DD]
  */
 'use strict';
 
@@ -105,8 +105,11 @@ if (unreleasedMatch && typeof unreleasedMatch.index === 'number') {
   const remaining = changelog.slice(bodyStart);
   const nextHeadingOffset = remaining.search(/^## \[/m);
   const bodyEnd = nextHeadingOffset === -1 ? changelog.length : bodyStart + nextHeadingOffset;
-  let body = changelog.slice(bodyStart, bodyEnd).replace(/\n---\s*$/m, '').trim();
-  if (!body || /_Changes for the next release go here\./.test(body)) body = releaseTemplate;
+  let body = changelog.slice(bodyStart, bodyEnd)
+    .replace(/_Changes for the next release go here\. Run `npm run release:prepare -- <version>` to promote this section\._\s*/m, '')
+    .replace(/\n---\s*$/m, '')
+    .trim();
+  if (!body) body = releaseTemplate;
 
   const replacement = [
     '## [Unreleased]',
@@ -119,6 +122,7 @@ if (unreleasedMatch && typeof unreleasedMatch.index === 'number') {
     '',
     body,
     '',
+    '---',
     ''
   ].join('\n');
   nextChangelog = `${changelog.slice(0, unreleasedMatch.index)}${replacement}${changelog.slice(bodyEnd)}`;
@@ -136,6 +140,7 @@ if (unreleasedMatch && typeof unreleasedMatch.index === 'number') {
     '',
     releaseTemplate,
     '',
+    '---',
     ''
   ].join('\n');
   nextChangelog = `${changelog.slice(0, firstVersionHeading)}${block}${changelog.slice(firstVersionHeading)}`;

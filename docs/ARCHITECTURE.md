@@ -50,7 +50,9 @@ playback evidence exists, the engine observes the player root and starts a
    player context; next-episode text must be inside post-play context.
 4. Credit actions require valid media metadata, must not run during the first
    45 seconds, and require either near-end playback or post-play context.
-5. Intro and recap actions are blocked after 60% playback progress.
+5. Generic intro/recap text matching is suppressed after 60% playback progress
+   when valid media progress is available; explicit Netflix selectors remain
+   authoritative during episode transitions.
 
 Ignored regions include the bottom control bar, episode/season drawers,
 audio/subtitle menus, and known non-action post-play controls such as Watch

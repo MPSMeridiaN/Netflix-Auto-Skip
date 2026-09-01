@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _Changes for the next release go here. Run `npm run release:prepare -- <version>` to promote this section._
 
+---
+
+## [1.1.3] - 2026-09-01
+
+### Added
+
+### Changed
+
 ### Fixed
 - **Playback Startup Recovery**: Detects watch-route transitions that bypass the History API and waits for player visibility/class changes during startup, so Skip Intro is handled without reopening the extension.
 - **Bootstrap Startup Race**: Retries the initial engine start briefly when Vivaldi restores a Netflix tab before the extension runtime is ready.
@@ -147,7 +155,7 @@ _Changes for the next release go here. Run `npm run release:prepare -- <version>
 
 ---
 
-[unreleased]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.2...HEAD
+[unreleased]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.3...HEAD
 [1.1.1]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.7...v1.1.0
 [1.0.7]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.6...v1.0.7
@@ -159,3 +167,4 @@ _Changes for the next release go here. Run `npm run release:prepare -- <version>
 [1.0.1]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases/tag/v1.0.0
 [1.1.2]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.1...v1.1.2
+[1.1.3]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.2...v1.1.3

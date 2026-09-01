@@ -37,7 +37,7 @@
 
 ## 🚀 Quick Install (3 Steps)
 
-1. **Download Release**: Grab [`netflix-auto-skip-v1.1.2.zip`](dist/netflix-auto-skip-v1.1.2.zip) from the [`dist/`](dist/) folder or [GitHub Releases](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases).
+1. **Download Release**: Grab [`netflix-auto-skip-v1.1.3.zip`](dist/netflix-auto-skip-v1.1.3.zip) from the [`dist/`](dist/) folder or [GitHub Releases](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases).
 2. **Extract ZIP**: Extract the archive to a folder on your computer.
 3. **Load Extension**:
    - Open your browser's extension page (e.g. `chrome://extensions` or `vivaldi://extensions`).
@@ -76,7 +76,7 @@ graph LR
 
 - **Targeted Selectors**: Matches verified Netflix skip buttons while explicitly excluding player controls, audio/subtitle menus, and episode drawers.
 - **Episode State Machine**: Uses the canonical watch-route identity, so transient title DOM changes do not reset one-shot actions.
-- **Low Overhead**: The playback observer and 1-second fallback poll exist only while a recognized player-root video is active; mutation scans are batched with `requestAnimationFrame`.
+- **Low Overhead**: A lightweight route check finds playback transitions, while the playback observer and 1-second fallback poll exist only while a recognized player-root video is active; mutation scans are batched with `requestAnimationFrame`.
 
 *For detailed architectural specifications, state machine transitions, and design diagrams, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).*
 
@@ -95,10 +95,10 @@ That command validates JavaScript syntax, runs production-code QA, checks releas
 Releases are tag-driven. To prepare the next version and synchronize the manifest, popup, documentation, and changelog surfaces:
 
 ```bash
-npm run release:prepare -- 1.1.2
+npm run release:prepare -- X.Y.Z
 ```
 
-Review and complete the generated version section in [`CHANGELOG.md`](CHANGELOG.md), then commit and push the matching tag (`v1.1.2`). GitHub Actions verifies the tag, runs the same build pipeline, attaches the ZIP, and publishes the release notes automatically.
+Review and complete the generated version section in [`CHANGELOG.md`](CHANGELOG.md), then commit and push the matching tag (`vX.Y.Z`). GitHub Actions verifies the tag, runs the same build pipeline, attaches the ZIP, and publishes the release notes automatically.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for change guidelines and [`SECURITY.md`](SECURITY.md) for private vulnerability reporting.
 
