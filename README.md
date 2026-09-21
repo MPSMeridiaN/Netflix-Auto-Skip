@@ -13,7 +13,7 @@
 
 <br/>
 
-<img src="assets/infographic.png" alt="Netflix Auto Skip Overview" width="820" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);" />
+<img src="assets/screenshot.png" alt="Netflix Auto Skip Interface Showcase" width="820" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);" />
 
 <br/>
 
@@ -32,6 +32,10 @@
 - **On-Screen HUD Toast** — Sleek, subtle floating indicator when an action occurs (optional).
 - **Customizable Toggles** — Turn individual automation features on or off anytime via the popup.
 - **Local Skip Counters** — Tracks skip counts directly on your machine.
+
+<div align="center">
+  <img src="assets/infographic.png" alt="Automation Workflow Diagram" width="780" style="border-radius: 10px; margin-top: 14px;" />
+</div>
 
 ---
 
