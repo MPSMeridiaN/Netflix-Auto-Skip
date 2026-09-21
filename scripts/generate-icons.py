@@ -1,122 +1,139 @@
 """
 Premium Cinematic Icon Generator for Netflix Auto Skip Extension.
-Renders ultra-luxury, high-definition icons (1024x1024 master) with rich gradients,
-ambient lighting, precision geometry, and downscales with Lanczos resampling.
+Renders ultra-luxury, high-definition icons with 2x supersampling,
+rich continuous gradients, ambient lighting, and precision geometry.
 """
 import os
-import math
 from PIL import Image, ImageDraw, ImageFilter
 
+
 def create_premium_icon(size=1024):
-    # Base RGBA canvas
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    
-    # 1. High-resolution Squircle Background with Radial Gradient
-    bg = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    bg_draw = ImageDraw.Draw(bg)
-    
-    margin = size * 0.04
-    radius = size * 0.24
-    box = [margin, margin, size - margin, size - margin]
-    
-    # Draw dark obsidian base
-    bg_draw.rounded_rectangle(box, radius=radius, fill=(14, 14, 16, 255))
-    
-    # Radial sheen layer for luxury glass/metallic feel
-    sheen = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    sheen_draw = ImageDraw.Draw(sheen)
-    sheen_box = [margin + size * 0.02, margin + size * 0.02, size - margin - size * 0.02, size * 0.55]
-    sheen_draw.rounded_rectangle(sheen_box, radius=radius * 0.8, fill=(255, 255, 255, 18))
-    sheen = sheen.filter(ImageFilter.GaussianBlur(size * 0.04))
-    
-    # Composite sheen
-    bg.alpha_composite(sheen)
-    
-    # Subtle Outer Glow & Crimson Rim Border
-    border_draw = ImageDraw.Draw(bg)
-    border_draw.rounded_rectangle(
-        box,
-        radius=radius,
-        outline=(229, 9, 20, 200),
-        width=int(size * 0.028)
-    )
-    
-    # Inner subtle highlight ring
-    inner_box = [margin + size * 0.025, margin + size * 0.025, size - margin - size * 0.025, size - margin - size * 0.025]
-    border_draw.rounded_rectangle(
-        inner_box,
-        radius=radius * 0.88,
-        outline=(255, 255, 255, 25),
-        width=int(size * 0.01)
-    )
-    
-    # 2. Modern Futuristic Skip / Fast-Forward Chevrons
-    glyph = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    glyph_draw = ImageDraw.Draw(glyph)
-    
-    # Dimensions for modern chevrons
-    top = size * 0.28
-    bottom = size * 0.72
-    mid_y = size * 0.50
-    
-    # Chevron 1 (Primary Netflix Crimson Gradient)
-    c1_left = size * 0.20
-    c1_tip = size * 0.44
-    
-    # Chevron 2 (Secondary Crimson/White Accent)
-    c2_left = size * 0.46
-    c2_tip = size * 0.70
-    
-    # End Bar (Skip Bar)
-    bar_x1 = size * 0.73
-    bar_x2 = size * 0.80
-    
-    # Draw soft drop shadow for glyph
-    shadow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    shadow_draw = ImageDraw.Draw(shadow)
-    
-    # First Chevron (Vibrant Netflix Red Gradient)
-    triangle_1 = [(c1_left, top), (c1_tip, mid_y), (c1_left, bottom)]
-    triangle_2 = [(c2_left, top), (c2_tip, mid_y), (c2_left, bottom)]
-    
-    shadow_offset = size * 0.02
-    shadow_triangle_1 = [(c1_left, top + shadow_offset), (c1_tip, mid_y + shadow_offset), (c1_left, bottom + shadow_offset)]
-    shadow_triangle_2 = [(c2_left, top + shadow_offset), (c2_tip, mid_y + shadow_offset), (c2_left, bottom + shadow_offset)]
-    shadow_bar = [bar_x1, top + shadow_offset, bar_x2, bottom + shadow_offset]
-    
-    shadow_draw.polygon(shadow_triangle_1, fill=(0, 0, 0, 180))
-    shadow_draw.polygon(shadow_triangle_2, fill=(0, 0, 0, 180))
-    shadow_draw.rounded_rectangle(shadow_bar, radius=int((bar_x2 - bar_x1) / 2), fill=(0, 0, 0, 180))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(size * 0.025))
-    
-    # Draw Chevrons on glyph layer
-    glyph_draw.polygon(triangle_1, fill=(229, 9, 20, 255))
-    glyph_draw.polygon(triangle_2, fill=(255, 30, 39, 255))
-    glyph_draw.rounded_rectangle([bar_x1, top, bar_x2, bottom], radius=int((bar_x2 - bar_x1) / 2), fill=(255, 255, 255, 240))
-    
-    # Subtle inner bevel/highlight on Triangle 1
-    t1_highlight = [(c1_left, top), (c1_tip, mid_y), (c1_left + size * 0.05, top)]
-    glyph_draw.polygon(t1_highlight, fill=(255, 80, 80, 120))
-    
-    # Merge layers: Base -> Shadow -> Glyph
-    img.alpha_composite(bg)
+    ss = size * 2
+    img = Image.new("RGBA", (ss, ss), (0, 0, 0, 0))
+
+    margin = ss * 0.045
+    radius = ss * 0.22
+    box = [margin, margin, ss - margin, ss - margin]
+
+    # 1. Dark obsidian base squircle
+    base = Image.new("RGBA", (ss, ss), (0, 0, 0, 0))
+    b_draw = ImageDraw.Draw(base)
+    b_draw.rounded_rectangle(box, radius=radius, fill=(15, 15, 18, 255))
+
+    # Radial ambient glow (Netflix Crimson backlight)
+    ambient = Image.new("RGBA", (ss, ss), (0, 0, 0, 0))
+    a_draw = ImageDraw.Draw(ambient)
+    a_draw.ellipse([ss * 0.16, ss * 0.16, ss * 0.84, ss * 0.84], fill=(229, 9, 20, 125))
+    ambient = ambient.filter(ImageFilter.GaussianBlur(ss * 0.13))
+    base.alpha_composite(ambient)
+
+    # Sleek crimson outer rim
+    b_draw.rounded_rectangle(box, radius=radius, outline=(229, 9, 20, 210), width=int(ss * 0.018))
+    # Delicate inner specular highlight
+    inner_box = [margin + ss * 0.014, margin + ss * 0.014, ss - margin - ss * 0.014, ss - margin - ss * 0.014]
+    b_draw.rounded_rectangle(inner_box, radius=radius * 0.94, outline=(255, 255, 255, 22), width=int(ss * 0.006))
+
+    # 2. Skip glyph geometry (Symmetrical & Balanced)
+    top = ss * 0.27
+    bottom = ss * 0.73
+    mid_y = ss * 0.50
+    h_glyph = bottom - top
+
+    w_tri = ss * 0.225
+    gap = ss * 0.045
+    w_bar = ss * 0.055
+
+    total_w = w_tri * 2 + gap * 2 + w_bar
+    start_x = (ss - total_w) / 2
+
+    t1_x = start_x
+    t2_x = start_x + w_tri + gap
+    bar_x = start_x + w_tri * 2 + gap * 2
+
+    # Both triangles are 100% mathematically identical
+    tri1 = [(t1_x, top), (t1_x + w_tri, mid_y), (t1_x, bottom)]
+    tri2 = [(t2_x, top), (t2_x + w_tri, mid_y), (t2_x, bottom)]
+    bar = [bar_x, top, bar_x + w_bar, bottom]
+
+    # 3. Soft drop shadow behind glyph
+    shadow = Image.new("RGBA", (ss, ss), (0, 0, 0, 0))
+    s_draw = ImageDraw.Draw(shadow)
+    s_off = ss * 0.02
+    s_tri1 = [(x, y + s_off) for x, y in tri1]
+    s_tri2 = [(x, y + s_off) for x, y in tri2]
+    s_bar = [bar_x, top + s_off, bar_x + w_bar, bottom + s_off]
+    s_draw.polygon(s_tri1, fill=(0, 0, 0, 220))
+    s_draw.polygon(s_tri2, fill=(0, 0, 0, 220))
+    s_draw.rounded_rectangle(s_bar, radius=int(w_bar / 2), fill=(0, 0, 0, 220))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(ss * 0.026))
+
+    # 4. Glyph layer with smooth continuous vertical gradient
+    glyph_mask = Image.new("L", (ss, ss), 0)
+    gm_draw = ImageDraw.Draw(glyph_mask)
+    gm_draw.polygon(tri1, fill=255)
+    gm_draw.polygon(tri2, fill=255)
+    gm_draw.rounded_rectangle(bar, radius=int(w_bar / 2), fill=255)
+
+    grad = Image.new("RGBA", (ss, ss), (0, 0, 0, 0))
+    g_draw = ImageDraw.Draw(grad)
+    c_top = (255, 56, 68)   # Luminous ruby red
+    c_bot = (205, 8, 16)    # Deep Netflix crimson
+    for y in range(int(top), int(bottom) + 1):
+        ratio = (y - top) / h_glyph
+        r = int(c_top[0] * (1 - ratio) + c_bot[0] * ratio)
+        g = int(c_top[1] * (1 - ratio) + c_bot[1] * ratio)
+        b = int(c_top[2] * (1 - ratio) + c_bot[2] * ratio)
+        g_draw.line([(0, y), (ss, y)], fill=(r, g, b, 255))
+
+    glyph_layer = Image.new("RGBA", (ss, ss), (0, 0, 0, 0))
+    glyph_layer.paste(grad, (0, 0), glyph_mask)
+
+    # 5. Composite layers
+    img.alpha_composite(base)
     img.alpha_composite(shadow)
-    img.alpha_composite(glyph)
-    
-    return img
+    img.alpha_composite(glyph_layer)
+
+    return img.resize((size, size), Image.Resampling.LANCZOS)
+
 
 def main():
-    icons_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons"))
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    icons_dir = os.path.join(root_dir, "icons")
+    assets_dir = os.path.join(root_dir, "assets")
     os.makedirs(icons_dir, exist_ok=True)
-    
+    os.makedirs(assets_dir, exist_ok=True)
+
     master = create_premium_icon(1024)
-    
+
+    # Extension icons
     sizes = [16, 32, 48, 128]
     for s in sizes:
         resized = master.resize((s, s), Image.Resampling.LANCZOS)
         out_path = os.path.join(icons_dir, f"icon-{s}.png")
         resized.save(out_path, "PNG", optimize=True)
-        print(f"Generated premium icon: {out_path} ({s}x{s})")
+        print(f"Generated extension icon: {out_path} ({s}x{s})")
+
+    # Store logo 300x300
+    logo_300 = master.resize((300, 300), Image.Resampling.LANCZOS)
+    logo_path = os.path.join(assets_dir, "store-logo-geometric-300x300.png")
+    logo_300.save(logo_path, "PNG", optimize=True)
+    print(f"Generated store logo: {logo_path} (300x300)")
+
+    # Small Promotional Tile 440x280
+    tile_w, tile_h = 440, 280
+    tile = Image.new("RGBA", (tile_w, tile_h), (14, 14, 16, 255))
+    t_glow = Image.new("RGBA", (tile_w, tile_h), (0, 0, 0, 0))
+    tg_draw = ImageDraw.Draw(t_glow)
+    tg_draw.ellipse([tile_w // 2 - 180, tile_h // 2 - 180, tile_w // 2 + 180, tile_h // 2 + 180], fill=(229, 9, 20, 60))
+    t_glow = t_glow.filter(ImageFilter.GaussianBlur(60))
+    tile.alpha_composite(t_glow)
+
+    logo_resized = master.resize((150, 150), Image.Resampling.LANCZOS)
+    tile.paste(logo_resized, (tile_w // 2 - 75, (tile_h - 150) // 2), logo_resized)
+    promo_path = os.path.join(assets_dir, "promo-tile-440x280.png")
+    tile.convert("RGB").save(promo_path, "PNG", optimize=True)
+    print(f"Generated promotional tile: {promo_path} (440x280)")
+
 
 if __name__ == "__main__":
     main()
