@@ -41,7 +41,7 @@
 
 ## 🚀 Quick Install (3 Steps)
 
-1. **Download Release**: Grab [`netflix-auto-skip-v1.1.3.zip`](dist/netflix-auto-skip-v1.1.3.zip) from the [`dist/`](dist/) folder or [GitHub Releases](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases).
+1. **Download Release**: Grab [`netflix-auto-skip-v1.1.4.zip`](dist/netflix-auto-skip-v1.1.4.zip) from the [`dist/`](dist/) folder or [GitHub Releases](https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases).
 2. **Extract ZIP**: Extract the archive to a folder on your computer.
 3. **Load Extension**:
    - Open your browser's extension page (e.g. `chrome://extensions` or `vivaldi://extensions`).

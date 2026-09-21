@@ -13,6 +13,20 @@ _Changes for the next release go here. Run `npm run release:prepare -- <version>
 
 ---
 
+## [1.1.4] - 2026-09-21
+
+### Added
+- **High-Definition Store Assets**: Added standardized 300x300 store logos, 440x280 promotional tiles, and updated 1280x800 showcase screenshots for the Microsoft Edge Add-ons catalog.
+
+### Changed
+- **Icon Modernization**: Re-rendered all extension icons with 2x supersampling, uniform crimson gradients, and ambient glow.
+- **Store Compliance**: Shortened manifest `short_name` to 12 characters (`Netflix Skip`) to meet Chromium and Edge Store listing guidelines.
+
+### Fixed
+- **Chevron Asymmetry**: Resolved chevron highlight asymmetry and color mismatch between arrow glyphs and the skip bar in `generate-icons.py`.
+
+
+---
 ## [1.1.3] - 2026-09-01
 
 ### Added
@@ -155,7 +169,7 @@ _Changes for the next release go here. Run `npm run release:prepare -- <version>
 
 ---
 
-[unreleased]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.3...HEAD
+[unreleased]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.4...HEAD
 [1.1.1]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.7...v1.1.0
 [1.0.7]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.0.6...v1.0.7
@@ -168,3 +182,4 @@ _Changes for the next release go here. Run `npm run release:prepare -- <version>
 [1.0.0]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/releases/tag/v1.0.0
 [1.1.2]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.1...v1.1.2
 [1.1.3]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.2...v1.1.3
+[1.1.4]: https://github.com/MPSMeridiaN/Netflix-Auto-Skip/compare/v1.1.3...v1.1.4
