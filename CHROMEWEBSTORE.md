@@ -1,4 +1,4 @@
-﻿# Chrome Web Store Listing & Disclosure Guide
+# Chrome Web Store Listing & Disclosure Guide
 
 This document contains the official metadata, permissions justifications, and privacy disclosures for the **Netflix Auto Skip** Chrome Web Store listing.
 
@@ -7,7 +7,7 @@ This document contains the official metadata, permissions justifications, and pr
 ## Store Listing Metadata
 
 - **Extension Name**: Netflix Auto Skip - Intro, Recap & Credits
-- **Short Name**: Netflix Auto Skip
+- **Short Name**: Netflix Skip
 - **Version**: 1.1.3
 - **Category**: Productivity / Accessibility
 - **Primary Language**: English
